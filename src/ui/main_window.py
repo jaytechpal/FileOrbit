@@ -2,6 +2,7 @@
 Main Window UI - OneCommander-style dual pane file manager
 """
 
+from pathlib import Path
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QSplitter,
     QMenuBar, QStatusBar, QToolBar, QTabWidget, QFrame
@@ -101,6 +102,7 @@ class MainWindow(QMainWindow):
         
         # Setup toolbar
         self.toolbar = ModernToolBar(self.file_service)
+        self.toolbar.setObjectName("MainToolBar")  # Set object name to avoid Qt warning
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
         
         # Setup status bar
@@ -267,7 +269,7 @@ class MainWindow(QMainWindow):
         """Handle sidebar location change"""
         active_panel = self._get_active_panel()
         if active_panel:
-            active_panel.navigate_to(path)
+            active_panel.navigate_to(Path(path))
     
     def _on_selection_changed(self, selection_info):
         """Handle file selection change"""
@@ -277,8 +279,12 @@ class MainWindow(QMainWindow):
     def save_window_state(self):
         """Save window state to settings"""
         if self.config:
-            self.config.set('window', 'geometry', self.saveGeometry())
-            self.config.set('window', 'state', self.saveState())
+            # Convert QByteArray to base64 string for JSON serialization
+            geometry = self.saveGeometry().toBase64().data().decode('utf-8')
+            state = self.saveState().toBase64().data().decode('utf-8')
+            
+            self.config.set('window', 'geometry', geometry)
+            self.config.set('window', 'state', state)
     
     def restore_window_state(self):
         """Restore window state from settings"""
@@ -287,9 +293,14 @@ class MainWindow(QMainWindow):
             state = self.config.get('window', 'state')
             
             if geometry:
-                self.restoreGeometry(geometry)
+                # Convert base64 string back to QByteArray
+                from PySide6.QtCore import QByteArray
+                geometry_bytes = QByteArray.fromBase64(geometry.encode('utf-8'))
+                self.restoreGeometry(geometry_bytes)
             if state:
-                self.restoreState(state)
+                from PySide6.QtCore import QByteArray
+                state_bytes = QByteArray.fromBase64(state.encode('utf-8'))
+                self.restoreState(state_bytes)
     
     def closeEvent(self, event):
         """Handle window close event"""

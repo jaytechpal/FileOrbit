@@ -11,7 +11,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 
 from src.core.application import FileOrbitApplication
@@ -21,11 +20,7 @@ from src.config.settings import AppConfig
 
 def main():
     """Main application entry point"""
-    # Enable high DPI support
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-    
-    # Create QApplication
+    # Create QApplication first (Qt6 handles high DPI automatically)
     app = QApplication(sys.argv)
     app.setApplicationName("FileOrbit")
     app.setApplicationVersion("1.0.0")

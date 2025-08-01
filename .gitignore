@@ -1,3 +1,10 @@
+# Virtual Environment
+fileorbit-env/
+env/
+venv/
+.env
+.venv/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

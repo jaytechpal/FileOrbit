@@ -44,10 +44,44 @@ A sleek, modern dual-pane file manager built with Python and PySide6, inspired b
 
 ## Installation
 
+### Quick Setup (Recommended)
+
+**Windows (PowerShell):**
+```powershell
+# Run the automated setup script
+.\setup_venv.ps1
+```
+
+**Windows (Command Prompt):**
+```cmd
+# Run the automated setup script
+setup_venv.bat
+```
+
+**macOS/Linux:**
+```bash
+# Make script executable and run
+chmod +x setup_venv.sh
+./setup_venv.sh
+```
+
+### Manual Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/youruser/FileOrbit.git
 cd FileOrbit
+
+# Create virtual environment
+python -m venv fileorbit-env
+
+# Activate virtual environment
+# Windows PowerShell:
+.\fileorbit-env\Scripts\Activate.ps1
+# Windows CMD:
+fileorbit-env\Scripts\activate.bat
+# macOS/Linux:
+source fileorbit-env/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -58,8 +92,31 @@ python main.py
 
 ## Development Setup
 
+### Virtual Environment (Recommended)
+
+**Automated Setup:**
+```powershell
+# Windows PowerShell (Recommended)
+.\setup_venv.ps1
+
+# Windows Command Prompt
+setup_venv.bat
+
+# macOS/Linux
+chmod +x setup_venv.sh && ./setup_venv.sh
+```
+
+**Manual Setup:**
 ```bash
-# Install development dependencies
+# Create and activate virtual environment
+python -m venv fileorbit-env
+
+# Activate (choose your platform)
+.\fileorbit-env\Scripts\Activate.ps1  # Windows PowerShell
+fileorbit-env\Scripts\activate.bat    # Windows CMD
+source fileorbit-env/bin/activate     # macOS/Linux
+
+# Install dependencies
 pip install -r requirements.txt
 
 # Run tests
@@ -71,6 +128,20 @@ black src/
 # Type checking
 mypy src/
 ```
+
+### IDE Configuration
+
+**VS Code:**
+1. Open project folder
+2. Press `Ctrl+Shift+P` → "Python: Select Interpreter"
+3. Choose: `./fileorbit-env/Scripts/python.exe` (Windows) or `./fileorbit-env/bin/python` (macOS/Linux)
+
+**PyCharm:**
+1. File → Settings → Project → Python Interpreter
+2. Add new interpreter → Existing environment
+3. Select the Python executable from your virtual environment
+
+For detailed virtual environment setup, see [VIRTUAL_ENV_SETUP.md](VIRTUAL_ENV_SETUP.md)
 
 ## Project Structure
 
