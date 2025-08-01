@@ -9,7 +9,7 @@ from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QListWidget,
     QListWidgetItem, QLabel, QLineEdit, QPushButton, QSplitter,
-    QTreeWidget, QTreeWidgetItem, QHeaderView, QMenu, QMessageBox
+    QTreeWidget, QTreeWidgetItem, QHeaderView, QMenu, QMessageBox, QStyle
 )
 from PySide6.QtCore import Qt, Signal, QTimer, QMimeData, QUrl
 from PySide6.QtGui import QIcon, QPixmap, QDrag, QAction
@@ -117,16 +117,22 @@ class FilePanel(QWidget):
         address_layout = QHBoxLayout()
         address_layout.setSpacing(2)
         
-        # Back/Forward buttons
-        back_btn = QPushButton("←")
+        # Get style for standard icons
+        style = self.style()
+        
+        # Back/Forward buttons with Qt standard icons
+        back_btn = QPushButton()
+        back_btn.setIcon(style.standardIcon(QStyle.SP_ArrowLeft))
         back_btn.setMaximumWidth(30)
         back_btn.setToolTip("Back")
         
-        forward_btn = QPushButton("→")
+        forward_btn = QPushButton()
+        forward_btn.setIcon(style.standardIcon(QStyle.SP_ArrowRight))
         forward_btn.setMaximumWidth(30)
         forward_btn.setToolTip("Forward")
         
-        up_btn = QPushButton("↑")
+        up_btn = QPushButton()
+        up_btn.setIcon(style.standardIcon(QStyle.SP_ArrowUp))
         up_btn.setMaximumWidth(30)
         up_btn.setToolTip("Up")
         up_btn.clicked.connect(self._go_up)
