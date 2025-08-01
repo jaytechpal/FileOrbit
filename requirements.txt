@@ -1,0 +1,20 @@
+# FileOrbit Requirements
+
+# Core Dependencies
+PySide6>=6.5.0
+watchdog>=3.0.0
+
+# Utility Dependencies
+Pillow>=10.0.0  # For image handling
+psutil>=5.9.0   # For system information
+send2trash>=1.8.0  # For safe file deletion
+
+# Development Dependencies
+pytest>=7.0.0
+pytest-qt>=4.2.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
+
+# Optional Dependencies
+pywin32>=306; sys_platform == "win32"  # Windows-specific features
