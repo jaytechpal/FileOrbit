@@ -66,6 +66,7 @@ class FilePanel(QWidget):
     selection_changed = Signal(dict)
     status_message = Signal(str)
     file_activated = Signal(str)
+    panel_activated = Signal(str)  # Emitted when this panel becomes active
     
     def __init__(self, panel_id: str, file_service=None, config=None):
         super().__init__()
@@ -417,3 +418,8 @@ class FilePanel(QWidget):
         if self.selected_files:
             # In a real implementation, you'd show a properties dialog
             self.status_message.emit("Properties dialog")
+    
+    def mousePressEvent(self, event):
+        """Handle mouse press to activate panel"""
+        self.panel_activated.emit(self.panel_id)
+        super().mousePressEvent(event)

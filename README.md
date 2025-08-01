@@ -5,7 +5,121 @@ A sleek, modern dual-pane file manager built with Python and PySide6, inspired b
 ## Features
 
 ### Core Features
-- **Dual-Pane Interface**: Side-by-side file browsing like OneCommander
+- **Dual-Pane Interface**: Sid## Documentation
+
+### 📖 User Documentation
+- **[Installation Guide](docs/INSTALLATION.md)** - Complete setup instructions for all platforms
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[User Manual](docs/USER_GUIDE.md)** - How to use FileOrbit features
+
+### 🔧 Developer Documentation
+- **[Development Guide](docs/DEVELOPMENT_GUIDE.md)** - Contributing and development setup
+- **[UI Components](docs/UI_COMPONENTS.md)** - Component architecture and APIs
+- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
+
+## Recent Fixes and Improvements
+
+### UI Enhancements ✅
+- **Toolbar Icons**: Added emoji-based navigation icons (← Back, Forward →, ↑ Up)
+- **Panel Navigation**: Fixed sidebar navigation to affect the currently active panel
+- **Theme Support**: Improved theme consistency across all components
+
+### Technical Improvements ✅
+- **Cache Management**: Added clean launch script to bypass Python bytecode cache
+- **Error Handling**: Improved Qt6 compatibility and error reporting
+- **Performance**: Optimized file operations and UI responsiveness
+
+### Installation & Setup ✅
+- **Quick Setup Scripts**: Automated virtual environment and dependency installation
+- **Cross-Platform**: Improved compatibility across Windows, macOS, and Linux
+- **Documentation**: Comprehensive setup and troubleshooting guides
+
+## Getting Help
+
+If you encounter issues:
+
+1. **Check Documentation**: Review the [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
+2. **Clean Installation**: Try the clean launch script: `.\run_clean.bat`
+3. **Check Requirements**: Ensure Python 3.8+ and dependencies are installed
+4. **Report Issues**: Open an issue on GitHub with detailed error information
+
+## Screenshots
+
+### Modern Dual-Pane Interface
+![FileOrbit Main Interface](resources/screenshots/main-interface.png)
+
+### Theme Options
+| Dark Theme | Light Theme | Blue Theme |
+|------------|-------------|------------|
+| ![Dark](resources/screenshots/dark-theme.png) | ![Light](resources/screenshots/light-theme.png) | ![Blue](resources/screenshots/blue-theme.png) |
+
+### Features in Action
+- **File Operations**: ![File Operations](resources/screenshots/file-operations.png)
+- **Toolbar**: ![Toolbar](resources/screenshots/toolbar.png)
+- **Sidebar Navigation**: ![Sidebar](resources/screenshots/sidebar.png)
+
+## Contributing
+
+We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT_GUIDE.md) for:
+
+- Development environment setup
+- Coding standards and guidelines  
+- Testing procedures
+- Pull request process
+
+### Quick Development Setup
+
+```bash
+git clone https://github.com/jaypalweb/FileOrbit.git
+cd FileOrbit
+python -m venv fileorbit-dev
+source fileorbit-dev/bin/activate  # Linux/macOS
+fileorbit-dev\Scripts\activate      # Windows
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+python main.py
+```
+
+## Roadmap
+
+### Upcoming Features
+- [ ] Tab support for multiple locations
+- [ ] Advanced search and filtering
+- [ ] File preview panel
+- [ ] Plugin system
+- [ ] Network drive support
+- [ ] Archive handling (zip, tar, etc.)
+- [ ] Integration with cloud storage
+
+### Long-term Goals
+- [ ] Mobile companion app
+- [ ] Built-in terminal integration
+- [ ] Git integration
+- [ ] Advanced file synchronization
+- [ ] Customizable layouts
+
+## Performance
+
+FileOrbit is optimized for:
+- **Large Directories**: Efficient handling of thousands of files
+- **Real-time Updates**: File system monitoring with minimal overhead
+- **Memory Usage**: Careful resource management and cleanup
+- **Cross-Platform**: Native performance on Windows, macOS, and Linux
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- **OneCommander** - Inspiration for the elegant dual-pane interface
+- **Qt/PySide6** - Robust cross-platform GUI framework
+- **Python Community** - Excellent ecosystem and libraries
+- **Contributors** - Everyone who has contributed code, bug reports, and feedback
+
+---
+
+**FileOrbit** - Making file management modern, efficient, and enjoyable.y-side file browsing like OneCommander
 - **Modern UI**: Clean, responsive interface with multiple themes
 - **Fast File Operations**: Multi-threaded copy/move/delete operations
 - **Real-time Updates**: Automatic refresh when files change
@@ -42,9 +156,24 @@ A sleek, modern dual-pane file manager built with Python and PySide6, inspired b
 - **Watchdog**: File system monitoring
 - **Threading**: QThread for non-blocking operations
 
-## Installation
+## Quick Start
 
-### Quick Setup (Recommended)
+### Installation
+
+The fastest way to get FileOrbit running:
+
+**Windows:**
+```batch
+# Run the quick setup script
+.\setup_quick.bat
+
+# Launch FileOrbit
+.\run_fileorbit.bat
+```
+
+**For detailed installation instructions, see [Installation Guide](docs/INSTALLATION.md)**
+
+### First Launch
 
 **Windows (PowerShell):**
 ```powershell

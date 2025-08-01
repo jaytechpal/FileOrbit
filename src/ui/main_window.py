@@ -44,6 +44,9 @@ class MainWindow(QMainWindow):
         self.status_bar = None
         self.command_palette = None
         
+        # Active panel tracking
+        self.active_panel = None  # Track which panel is currently active
+        
         self._setup_ui()
         self._setup_menu_bar()
         self._setup_shortcuts()
@@ -199,10 +202,15 @@ class MainWindow(QMainWindow):
         if self.left_panel:
             self.left_panel.status_message.connect(self.status_bar.show_message)
             self.left_panel.selection_changed.connect(self._on_selection_changed)
+            self.left_panel.panel_activated.connect(self._on_panel_activated)
         
         if self.right_panel:
             self.right_panel.status_message.connect(self.status_bar.show_message)
             self.right_panel.selection_changed.connect(self._on_selection_changed)
+            self.right_panel.panel_activated.connect(self._on_panel_activated)
+            
+        # Set initial active panel to left
+        self.active_panel = self.left_panel
     
     # Event handlers
     def _new_tab(self):
@@ -257,13 +265,15 @@ class MainWindow(QMainWindow):
     
     def _get_active_panel(self):
         """Get currently active panel"""
-        if self.left_panel and self.left_panel.hasFocus():
-            return self.left_panel
-        elif self.right_panel and self.right_panel.hasFocus():
-            return self.right_panel
-        else:
-            # Default to left panel
-            return self.left_panel
+        # Return the tracked active panel, defaulting to left if none set
+        return self.active_panel if self.active_panel else self.left_panel
+    
+    def _on_panel_activated(self, panel_id):
+        """Handle panel activation"""
+        if panel_id == "left":
+            self.active_panel = self.left_panel
+        elif panel_id == "right":
+            self.active_panel = self.right_panel
     
     def _on_sidebar_location_changed(self, path):
         """Handle sidebar location change"""
