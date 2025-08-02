@@ -1,102 +1,48 @@
-# FileOrbit - Modern File Manager
+# FileOrbit - Modern Cross-Platform File Manager
 
-A sleek, modern dual-pane file manager built with Python and PySide6, inspired by OneCommander's elegant interface.
+A sleek, modern dual-pane file manager built with Python and PySide6, inspired by OneCommander's elegant interface. FileOrbit provides a native experience across Windows, macOS, and Linux with platform-specific optimizations.
 
 ## Features
 
 ### Core Features
-- **Dual-Pane Interface**: Sid## Documentation
+- **Dual-Pane Interface**: Side-by-side file browsing like OneCommander
+- **Cross-Platform Native**: Optimized for Windows, macOS, and Linux with platform-specific icons and fonts
+- **Modern UI**: Clean, responsive interface with multiple themes
+- **Fast File Operations**: Multi-threaded copy/move/delete operations
+- **Real-time Updates**: Automatic refresh when files change
+- **Panel Focus System**: Advanced panel activation tracking with comprehensive debugging
 
-### 📖 User Documentation
-- **[Installation Guide](docs/INSTALLATION.md)** - Complete setup instructions for all platforms
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[User Manual](docs/USER_GUIDE.md)** - How to use FileOrbit features
+### File Operations
+- Copy, move, delete files and folders
+- Progress tracking for long operations
+- Background operations with QThread
+- File integrity verification
+- Batch operations support
+- Cross-platform permission handling
 
-### 🔧 Developer Documentation
-- **[Development Guide](docs/DEVELOPMENT_GUIDE.md)** - Contributing and development setup
-- **[UI Components](docs/UI_COMPONENTS.md)** - Component architecture and APIs
-- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
+### User Interface
+- Dark, Light, and Blue themes
+- Platform-appropriate fonts (Segoe UI, SF Pro Display, Ubuntu)
+- Native system icons via QFileIconProvider
+- Customizable layouts and keyboard shortcuts
+- Command palette (Ctrl+Shift+P)
+- Status bar with selection info
+- Enhanced sidebar with platform-specific navigation
 
-## Recent Fixes and Improvements
+### Cross-Platform Features
+- **Windows**: Drive detection (C:\, D:\, etc.), shell integration icons
+- **macOS**: Filesystem root navigation, Finder-style icons, SF Pro font
+- **Linux**: Desktop environment icons, package file detection (.deb, .rpm, .AppImage)
+- **All Platforms**: User directories, native look and feel
 
-### UI Enhancements ✅
-- **Toolbar Icons**: Added emoji-based navigation icons (← Back, Forward →, ↑ Up)
-- **Panel Navigation**: Fixed sidebar navigation to affect the currently active panel
-- **Theme Support**: Improved theme consistency across all components
+## Technology Stack
 
-### Technical Improvements ✅
-- **Cache Management**: Added clean launch script to bypass Python bytecode cache
-- **Error Handling**: Improved Qt6 compatibility and error reporting
-- **Performance**: Optimized file operations and UI responsiveness
-
-### Installation & Setup ✅
-- **Quick Setup Scripts**: Automated virtual environment and dependency installation
-- **Cross-Platform**: Improved compatibility across Windows, macOS, and Linux
-- **Documentation**: Comprehensive setup and troubleshooting guides
-
-## Getting Help
-
-If you encounter issues:
-
-1. **Check Documentation**: Review the [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
-2. **Clean Installation**: Try the clean launch script: `.\run_clean.bat`
-3. **Check Requirements**: Ensure Python 3.8+ and dependencies are installed
-4. **Report Issues**: Open an issue on GitHub with detailed error information
-
-## Screenshots
-
-### Modern Dual-Pane Interface
-![FileOrbit Main Interface](resources/screenshots/main-interface.png)
-
-### Theme Options
-| Dark Theme | Light Theme | Blue Theme |
-|------------|-------------|------------|
-| ![Dark](resources/screenshots/dark-theme.png) | ![Light](resources/screenshots/light-theme.png) | ![Blue](resources/screenshots/blue-theme.png) |
-
-### Features in Action
-- **File Operations**: ![File Operations](resources/screenshots/file-operations.png)
-- **Toolbar**: ![Toolbar](resources/screenshots/toolbar.png)
-- **Sidebar Navigation**: ![Sidebar](resources/screenshots/sidebar.png)
-
-## Contributing
-
-We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT_GUIDE.md) for:
-
-- Development environment setup
-- Coding standards and guidelines  
-- Testing procedures
-- Pull request process
-
-### Quick Development Setup
-
-```bash
-git clone https://github.com/jaypalweb/FileOrbit.git
-cd FileOrbit
-python -m venv fileorbit-dev
-source fileorbit-dev/bin/activate  # Linux/macOS
-fileorbit-dev\Scripts\activate      # Windows
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-python main.py
-```
-
-## Roadmap
-
-### Upcoming Features
-- [ ] Tab support for multiple locations
-- [ ] Advanced search and filtering
-- [ ] File preview panel
-- [ ] Plugin system
-- [ ] Network drive support
-- [ ] Archive handling (zip, tar, etc.)
-- [ ] Integration with cloud storage
-
-### Long-term Goals
-- [ ] Mobile companion app
-- [ ] Built-in terminal integration
-- [ ] Git integration
-- [ ] Advanced file synchronization
-- [ ] Customizable layouts
+- **Python 3.8+**: Core language with cross-platform compatibility
+- **PySide6**: Modern Qt6 bindings for native GUI
+- **QFileIconProvider**: Platform-specific native system icons
+- **Pathlib**: Cross-platform path handling
+- **Watchdog**: File system monitoring
+- **Threading**: QThread for non-blocking operations
 
 ## Performance
 
@@ -150,11 +96,44 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Technology Stack
 
-- **Python 3.8+**: Core language
-- **PySide6**: Modern Qt6 bindings for GUI
-- **Pathlib**: Modern path handling
+- **Python 3.8+**: Core language with cross-platform compatibility
+- **PySide6**: Modern Qt6 bindings for native GUI
+- **QFileIconProvider**: Platform-specific native system icons
+- **Pathlib**: Cross-platform path handling
 - **Watchdog**: File system monitoring
 - **Threading**: QThread for non-blocking operations
+
+## Recent Improvements and Status
+
+### ✅ Cross-Platform Compatibility (Latest)
+- **Native Icons**: QFileIconProvider integration for platform-appropriate file/folder icons
+- **Platform Fonts**: Automatic font selection (Segoe UI on Windows, SF Pro Display on macOS, Ubuntu on Linux)
+- **Configuration**: Platform-specific config directories (%APPDATA% on Windows, ~/.config on Unix)
+- **Sidebar Navigation**: Windows drives detection, macOS/Linux filesystem root navigation
+- **File Permissions**: Cross-platform permission handling (Windows read-only detection, Unix octal)
+
+### ✅ Panel System Enhancements
+- **Focus Tracking**: Advanced panel activation system with comprehensive debug logging
+- **Custom Widgets**: ActivatableTabWidget, ActivatableLineEdit, ActivatablePushButton classes
+- **Signal Integration**: All UI elements properly emit panel activation signals
+- **Sidebar Integration**: Navigation correctly affects the currently active panel
+
+### ✅ UI and Technical Improvements
+- **Toolbar Icons**: Emoji-based navigation icons (← Back, Forward →, ↑ Up)
+- **Icon System**: Enhanced fallback icons for common file types across platforms
+- **Error Handling**: Improved cross-platform error reporting and path handling
+- **Documentation**: Comprehensive cross-platform compatibility guide
+
+## Documentation
+
+### 📖 User Documentation
+- **[Installation Guide](docs/INSTALLATION.md)** - Complete setup instructions for all platforms
+- **[Cross-Platform Guide](CROSS_PLATFORM_COMPATIBILITY.md)** - Platform-specific features and compatibility
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
+### 🔧 Developer Documentation
+- **[Development Guide](docs/DEVELOPMENT_GUIDE.md)** - Contributing and development setup
+- **[UI Components](docs/UI_COMPONENTS.md)** - Component architecture and APIs
 
 ## Quick Start
 
@@ -338,28 +317,34 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Roadmap
 
-### Version 1.0 (Current)
-- [x] Basic dual-pane interface
-- [x] File operations (copy, move, delete)
-- [x] Modern theming system
-- [x] Configuration management
-- [ ] Complete UI components
-- [ ] File preview
-- [ ] Search functionality
+### Version 1.0 (Current - Major Progress)
+- [x] Dual-pane interface with panel activation system
+- [x] File operations (copy, move, delete) with multi-threading
+- [x] Modern theming system (Dark, Light, Blue)
+- [x] Cross-platform compatibility (Windows, macOS, Linux)
+- [x] Native system icons and platform-specific fonts
+- [x] Configuration management with platform-appropriate paths
+- [x] Enhanced sidebar navigation with filesystem support
+- [x] Comprehensive panel focus tracking and debugging
+- [ ] File preview panel
+- [ ] Advanced search functionality
+- [ ] Tab support for multiple locations
 
-### Version 1.1
-- [ ] Plugin system
-- [ ] Archive support (zip, rar, 7z)
-- [ ] Cloud storage integration
-- [ ] Advanced search with filters
-- [ ] File comparison tools
+### Version 1.1 (Planned)
+- [ ] Plugin system architecture
+- [ ] Archive support (zip, rar, 7z, tar)
+- [ ] Cloud storage integration (Google Drive, Dropbox, OneDrive)
+- [ ] Advanced search with filters and regex
+- [ ] File comparison tools and diff viewer
+- [ ] Network drive and remote filesystem support
 
-### Version 1.2
-- [ ] FTP/SFTP support
-- [ ] Image viewer
+### Version 1.2 (Future)
+- [ ] FTP/SFTP/SSH integration
+- [ ] Built-in image viewer with basic editing
 - [ ] Text editor integration
-- [ ] Bookmark system
-- [ ] Custom themes editor
+- [ ] Bookmark system for frequently accessed locations
+- [ ] Custom theme editor and sharing
+- [ ] Terminal integration
 
 ## Screenshots
 

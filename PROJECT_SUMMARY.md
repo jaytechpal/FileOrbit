@@ -2,52 +2,51 @@
 
 ## Project Overview
 
-**FileOrbit** is a modern, dual-pane file manager built with Python and PySide6, inspired by OneCommander's elegant interface. The application provides a sleek, cross-platform solution for efficient file management with advanced features and modern UI design.
+**FileOrbit** is a modern, cross-platform dual-pane file manager built with Python and PySide6, inspired by OneCommander's elegant interface. The application provides native experiences across Windows, macOS, and Linux with platform-specific optimizations and modern UI design.
 
-## Recent Major Updates (December 2024)
+## Latest Major Updates (August 2025)
 
-### Critical Fixes Implemented ✅
+### 🌍 Cross-Platform Compatibility Overhaul ✅ NEW
 
-#### 1. Panel Navigation System
-**Issue**: Sidebar navigation always affected the left panel regardless of which panel was active.
-**Solution**: Implemented comprehensive active panel tracking:
-- Added `panel_activated` signal to FilePanel components
-- Implemented `mousePressEvent` detection for panel clicks
-- Created active panel coordination in MainWindow
-- Now sidebar navigation correctly affects the currently active (clicked) panel
+#### Native Platform Integration
+**Achievement**: Complete cross-platform compatibility with native platform features:
+- **Native Icons**: QFileIconProvider integration for platform-appropriate file/folder icons
+- **Platform Fonts**: Automatic selection (Segoe UI/Windows, SF Pro Display/macOS, Ubuntu/Linux)
+- **Configuration Paths**: Platform-specific directories (%APPDATA%/Windows, ~/.config/Unix)
+- **Sidebar Navigation**: Windows drive detection, macOS/Linux filesystem root navigation
+- **File Permissions**: Cross-platform handling (Windows read-only, Unix octal permissions)
 
-#### 2. Toolbar Icon Visibility
-**Issue**: Navigation buttons (Back, Forward, Up) were invisible due to missing system icons.
-**Solution**: Implemented emoji-based icon system:
-- ← Back button with proper navigation
-- Forward → button for history navigation
-- ↑ Up button for parent directory
-- Added comprehensive operation icons (📄 Copy, ✂️ Move, 🗑️ Delete, etc.)
-- Cross-platform compatible emoji icons
+#### Enhanced Icon System
+**Implementation**: Comprehensive icon system with native OS integration:
+- QFileIconProvider for system-appropriate file type icons
+- Platform-specific executable detection (.exe, .app, .deb, .rpm, .AppImage)
+- Enhanced fallback icons for common file types
+- Parent directory icons optimized per platform
 
-#### 3. Python Cache Management
-**Issue**: Code changes weren't taking effect due to Python bytecode cache interference.
-**Solution**: Created comprehensive cache management system:
-- `run_clean.bat` script for clean application launches
-- Automatic `__pycache__` directory cleanup
-- Python `-B` flag to bypass bytecode compilation
-- Resolved persistent "no changes visible" issues
+### 🎯 Panel System Enhancement ✅
 
-#### 4. Qt6 Compatibility Updates
-**Issue**: Deprecated Qt attributes causing warnings and potential compatibility issues.
-**Solution**: Modernized Qt6 implementation:
-- Removed deprecated high DPI scaling attributes (Qt6 handles automatically)
-- Fixed QByteArray JSON serialization with base64 encoding
-- Updated import statements and error handling
-- Improved Path object type handling
+#### Advanced Panel Activation System
+**Achievement**: Complete rewrite of panel focus tracking:
+- **Custom Widget Classes**: ActivatableTabWidget, ActivatableLineEdit, ActivatablePushButton
+- **Signal Integration**: All UI elements properly emit panel activation signals
+- **Debug Logging**: Comprehensive activation tracking for troubleshooting
+- **Tab Click Fix**: Proper panel activation when clicking on tab areas
 
-### Documentation Suite Created ✅
+#### Reliable Focus Management
+**Solution**: Robust panel coordination system:
+- Mouse event detection for all interactive elements
+- Signal-slot connections for activation tracking
+- MainWindow coordination for consistent behavior
+- Sidebar navigation correctly affects active panel
 
-#### Comprehensive Documentation
-1. **[Installation Guide](docs/INSTALLATION.md)**: Complete setup for all platforms
-2. **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)**: Common issues and solutions
-3. **[UI Components Documentation](docs/UI_COMPONENTS.md)**: Architecture and APIs
-4. **[Development Guide](docs/DEVELOPMENT_GUIDE.md)**: Contributing and coding standards
+### 📚 Documentation and Architecture ✅
+
+#### Cross-Platform Documentation
+**Created**: Comprehensive guides and references:
+1. **[Cross-Platform Compatibility Guide](CROSS_PLATFORM_COMPATIBILITY.md)**: Platform-specific features
+2. **[Installation Guide](docs/INSTALLATION.md)**: Multi-platform setup instructions
+3. **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)**: Platform-specific issues
+4. **[Development Guide](docs/DEVELOPMENT_GUIDE.md)**: Cross-platform development setup
 5. **[Documentation Index](docs/README.md)**: Navigation and quick reference
 6. **[Changelog](CHANGELOG.md)**: Detailed version history and fixes
 
@@ -126,14 +125,27 @@ FileOrbit/
 └── docs/                      # Documentation
 ```
 
-## 🚀 **Key Technologies Used**
+## 🚀 **Key Technologies and Cross-Platform Features**
 
-1. **Python 3.8+**: Modern Python with type hints
-2. **PySide6**: Latest Qt6 bindings for modern GUI
-3. **QThread**: Non-blocking file operations
-4. **Pathlib**: Modern path handling
-5. **Watchdog**: File system monitoring
-6. **JSON**: Configuration persistence
+### Core Technologies
+1. **Python 3.8+**: Modern Python with cross-platform compatibility and type hints
+2. **PySide6**: Latest Qt6 bindings for native GUI across all platforms
+3. **QFileIconProvider**: Native system icon integration for platform-appropriate file icons
+4. **QThread**: Non-blocking file operations with progress tracking
+5. **Pathlib**: Cross-platform path handling with proper OS abstraction
+6. **Watchdog**: Real-time file system monitoring across platforms
+
+### Platform-Specific Integration
+- **Windows**: Shell icons, drive detection, Segoe UI font, %APPDATA% config
+- **macOS**: Finder icons, SF Pro Display font, filesystem root navigation
+- **Linux**: Desktop environment icons, Ubuntu font, package file detection
+- **All Platforms**: User directory detection, native look and feel
+
+### Advanced Features
+- **Custom Widget Classes**: ActivatableTabWidget, ActivatableLineEdit, ActivatablePushButton
+- **Debug System**: Comprehensive logging for panel activation and cross-platform behavior
+- **Icon Fallbacks**: Extensive fallback system for unsupported file types
+- **Error Handling**: Platform-appropriate error handling and permission management
 
 ## 💻 **Usage**
 

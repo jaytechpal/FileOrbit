@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Added - Cross-Platform Compatibility (Latest)
+- **Native Icons**: QFileIconProvider integration for platform-appropriate file and folder icons
+- **Platform Fonts**: Automatic font selection (Segoe UI/Windows, SF Pro Display/macOS, Ubuntu/Linux)
+- **Cross-Platform Config**: Platform-specific configuration directories (%APPDATA%, ~/.config)
+- **Enhanced Sidebar**: Windows drive detection, macOS/Linux filesystem root navigation
+- **File Permissions**: Cross-platform permission handling (Windows read-only, Unix octal)
+- **Custom Widgets**: ActivatableTabWidget, ActivatableLineEdit, ActivatablePushButton classes
+- **Debug System**: Comprehensive panel activation logging and tracking
+- **Icon Fallbacks**: Enhanced fallback icons for common file types across platforms
+- **Documentation**: Complete cross-platform compatibility guide
+
+### Added - Previous Features
 - Comprehensive documentation suite in `docs/` directory
 - Installation guide with platform-specific instructions
 - Troubleshooting guide with common issues and solutions
@@ -19,7 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced error handling and logging
 
 ### Changed
-- Improved README.md with better structure and documentation links
+- **Configuration Paths**: Now use platform-appropriate directories instead of generic paths
+- **Icon System**: Replaced basic icons with native system icons via QFileIconProvider
+- **Font Selection**: Dynamic font selection based on platform instead of hardcoded Segoe UI
+- **Sidebar Navigation**: Enhanced with platform-specific filesystem navigation
+- **Panel Activation**: Complete rewrite with custom widget classes for reliable signal emission
+- Improved README.md with better structure and cross-platform documentation
 - Updated toolbar to use emoji icons instead of system icons
 - Enhanced panel navigation to respect currently active panel
 - Improved Qt6 compatibility by removing deprecated attributes
@@ -28,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Critical**: Panel navigation now affects the correct (active) panel instead of always the left panel
 - **Critical**: Toolbar navigation buttons now visible with emoji icons (← ↑ →)
+- **Cross-Platform**: File permissions now handled appropriately on Windows vs Unix systems
+- **Cross-Platform**: Configuration and log directories now follow platform conventions
+- **Panel Focus**: Tab clicking now properly activates panels with custom widget signal emission
+- **Icon Loading**: Improved fallback system for missing or unsupported icons
 - **Critical**: Python bytecode cache no longer prevents code updates from taking effect
 - Qt6 high DPI deprecation warnings removed
 - JSON serialization errors with QByteArray objects

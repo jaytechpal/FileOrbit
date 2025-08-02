@@ -1,11 +1,21 @@
-# FileOrbit Setup and Installation Guide
+# FileOrbit Installation Guide
 
 ## System Requirements
 
+### Minimum Requirements
 - **Python**: 3.8 or higher
 - **Operating System**: Windows 10+, macOS 10.14+, or Linux (Ubuntu 18.04+)
 - **Memory**: 4GB RAM minimum, 8GB recommended
 - **Disk Space**: 500MB for application and dependencies
+
+### Platform-Specific Features
+- **Windows**: Native shell icons, drive detection, Segoe UI font
+- **macOS**: Finder-style icons, SF Pro Display font, filesystem root navigation
+- **Linux**: Desktop environment icons, Ubuntu font, package file detection
+
+## Cross-Platform Installation
+
+FileOrbit is designed to work seamlessly across all major platforms with platform-specific optimizations.
 
 ## Installation Methods
 
