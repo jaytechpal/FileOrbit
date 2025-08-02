@@ -266,7 +266,10 @@ class MainWindow(QMainWindow):
     def _get_active_panel(self):
         """Get currently active panel"""
         # Return the tracked active panel, defaulting to left if none set
-        return self.active_panel if self.active_panel else self.left_panel
+        active = self.active_panel if self.active_panel else self.left_panel
+        panel_id = active.panel_id if hasattr(active, 'panel_id') else 'unknown'
+        self.logger.info(f"_get_active_panel returning panel: {panel_id}")
+        return active
     
     def _on_panel_activated(self, panel_id):
         """Handle panel activation"""

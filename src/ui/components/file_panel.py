@@ -17,6 +17,37 @@ from PySide6.QtGui import QIcon, QPixmap, QDrag, QAction
 from src.utils.logger import get_logger
 
 
+class ActivatableTabWidget(QTabWidget):
+    """Tab widget that emits activation signal when clicked"""
+    clicked_for_activation = Signal()
+    
+    def mousePressEvent(self, event):
+        self.clicked_for_activation.emit()
+        super().mousePressEvent(event)
+
+
+class ActivatableLineEdit(QLineEdit):
+    """Line edit that emits activation signal when clicked or focused"""
+    clicked_for_activation = Signal()
+    
+    def mousePressEvent(self, event):
+        self.clicked_for_activation.emit()
+        super().mousePressEvent(event)
+        
+    def focusInEvent(self, event):
+        self.clicked_for_activation.emit()
+        super().focusInEvent(event)
+
+
+class ActivatablePushButton(QPushButton):
+    """Push button that emits activation signal when clicked"""
+    clicked_for_activation = Signal()
+    
+    def mousePressEvent(self, event):
+        self.clicked_for_activation.emit()
+        super().mousePressEvent(event)
+
+
 class FileListWidget(QListWidget):
     """Custom list widget for file display"""
     
@@ -103,9 +134,12 @@ class FilePanel(QWidget):
         layout.setSpacing(2)
         
         # Tab widget for multiple tabs
-        self.tab_widget = QTabWidget()
+        self.tab_widget = ActivatableTabWidget()
         self.tab_widget.setTabsClosable(True)
         self.tab_widget.setMovable(True)
+        self.tab_widget.clicked_for_activation.connect(self._on_child_widget_clicked)
+        # Also connect to tab bar clicks directly
+        self.tab_widget.tabBarClicked.connect(lambda index: self._on_child_widget_clicked())
         
         # Create first tab
         self._create_new_tab()
@@ -127,27 +161,30 @@ class FilePanel(QWidget):
         style = self.style()
         
         # Back/Forward buttons with Qt standard icons
-        back_btn = QPushButton()
+        back_btn = ActivatablePushButton()
         back_btn.setIcon(style.standardIcon(QStyle.SP_ArrowLeft))
         back_btn.setMaximumWidth(30)
         back_btn.setToolTip("Back")
+        back_btn.clicked_for_activation.connect(self._on_child_widget_clicked)
         
-        forward_btn = QPushButton()
+        forward_btn = ActivatablePushButton()
         forward_btn.setIcon(style.standardIcon(QStyle.SP_ArrowRight))
         forward_btn.setMaximumWidth(30)
         forward_btn.setToolTip("Forward")
+        forward_btn.clicked_for_activation.connect(self._on_child_widget_clicked)
         
-        up_btn = QPushButton()
+        up_btn = ActivatablePushButton()
         up_btn.setIcon(style.standardIcon(QStyle.SP_ArrowUp))
         up_btn.setMaximumWidth(30)
         up_btn.setToolTip("Up")
         up_btn.clicked.connect(self._go_up)
+        up_btn.clicked_for_activation.connect(self._on_child_widget_clicked)
         
         # Address bar
-        self.address_bar = QLineEdit()
+        self.address_bar = ActivatableLineEdit()
         self.address_bar.setText(str(path or self.current_path))
         self.address_bar.returnPressed.connect(self._navigate_to_address)
-        self.address_bar.mousePressEvent = lambda event: (self._on_child_widget_clicked(), QLineEdit.mousePressEvent(self.address_bar, event))
+        self.address_bar.clicked_for_activation.connect(self._on_child_widget_clicked)
         
         address_layout.addWidget(back_btn)
         address_layout.addWidget(forward_btn)
@@ -365,8 +402,10 @@ class FilePanel(QWidget):
     # Public interface
     def navigate_to(self, path: Path):
         """Navigate to specified path"""
+        self.logger.info(f"Panel {self.panel_id} navigate_to called with path: {path}")
         try:
             if path.exists() and path.is_dir():
+                self.logger.info(f"Panel {self.panel_id} navigating from {self.current_path} to {path}")
                 self.current_path = path
                 self.address_bar.setText(str(path))
                 self._refresh_file_list()
@@ -376,6 +415,7 @@ class FilePanel(QWidget):
                 current_tab = self.tab_widget.currentIndex()
                 tab_name = path.name or "Root"
                 self.tab_widget.setTabText(current_tab, tab_name)
+                self.logger.info(f"Panel {self.panel_id} navigation completed successfully to {path}")
                 
                 # Start watching directory
                 if self.file_service:
