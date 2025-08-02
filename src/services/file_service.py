@@ -173,8 +173,9 @@ class FileWatcher(QObject, FileSystemEventHandler):
     
     def stop_all(self):
         """Stop all watching"""
-        self.observer.stop()
-        self.observer.join()
+        if self.observer.is_alive():
+            self.observer.stop()
+            self.observer.join()
         self.watched_paths.clear()
     
     def on_any_event(self, event):
