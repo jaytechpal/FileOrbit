@@ -211,6 +211,12 @@ class MainWindow(QMainWindow):
             
         # Set initial active panel to left
         self.active_panel = self.left_panel
+        
+        # Set initial visual states - left panel active by default
+        if self.left_panel:
+            self.left_panel.set_active(True)
+        if self.right_panel:
+            self.right_panel.set_active(False)
     
     # Event handlers
     def _new_tab(self):
@@ -274,12 +280,22 @@ class MainWindow(QMainWindow):
     def _on_panel_activated(self, panel_id):
         """Handle panel activation"""
         self.logger.info(f"Panel activated: {panel_id}")
+        
+        # Update active panel reference
         if panel_id == "left":
             self.active_panel = self.left_panel
+            # Update visual states
+            self.left_panel.set_active(True)
+            self.right_panel.set_active(False)
         elif panel_id == "right":
             self.active_panel = self.right_panel
+            # Update visual states
+            self.left_panel.set_active(False)
+            self.right_panel.set_active(True)
+            
         # Update status to show which panel is active
         self.status_bar.show_message(f"Active panel: {panel_id}", 2000)
+        self.logger.info(f"Panel visual states updated - Active: {panel_id}")
     
     def _on_sidebar_location_changed(self, path):
         """Handle sidebar location change"""

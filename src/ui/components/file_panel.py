@@ -151,6 +151,9 @@ class FilePanel(QWidget):
         # Also connect to tab bar clicks directly
         self.tab_widget.tabBarClicked.connect(lambda index: self._on_child_widget_clicked())
         
+        # Set initial styling
+        self._update_active_state(False)
+        
         # Create first tab
         self._create_new_tab()
         
@@ -541,6 +544,74 @@ class FilePanel(QWidget):
         """Handle child widget click to activate panel"""
         self.logger.info(f"Child widget in panel {self.panel_id} clicked - emitting panel_activated signal")
         self.panel_activated.emit(self.panel_id)
+    
+    def _update_active_state(self, is_active: bool):
+        """Update visual state to show if panel is active"""
+        if is_active:
+            # Active panel: Very subtle blue top border + brighter text
+            self.tab_widget.setStyleSheet("""
+                QTabWidget::pane {
+                    border: 1px solid palette(mid);
+                    border-top: 2px solid #007ACC;
+                    background-color: palette(base);
+                }
+                QTabWidget::tab-bar {
+                    alignment: left;
+                }
+                QTabBar::tab {
+                    background-color: transparent;
+                    padding: 6px 12px;
+                    margin-right: 1px;
+                    border: none;
+                    font-weight: normal;
+                    color: #FFFFFF;  /* Bright white text for active panel */
+                    min-width: 60px;
+                }
+                QTabBar::tab:selected {
+                    background-color: palette(base);
+                    font-weight: normal;
+                    color: #FFFFFF;  /* Bright white text for active tab */
+                }
+                QTabBar::tab:hover {
+                    background-color: palette(alternate-base);
+                    color: #FFFFFF;
+                }
+            """)
+            self.logger.info(f"Panel {self.panel_id} set to ACTIVE state (subtle blue top border + bright text)")
+        else:
+            # Inactive panel: No special border, dimmer text
+            self.tab_widget.setStyleSheet("""
+                QTabWidget::pane {
+                    border: 1px solid palette(mid);
+                    background-color: palette(base);
+                }
+                QTabWidget::tab-bar {
+                    alignment: left;
+                }
+                QTabBar::tab {
+                    background-color: transparent;
+                    padding: 6px 12px;
+                    margin-right: 1px;
+                    border: none;
+                    font-weight: normal;
+                    color: #AAAAAA;  /* Dimmer gray text for inactive panel */
+                    min-width: 60px;
+                }
+                QTabBar::tab:selected {
+                    background-color: palette(base);
+                    font-weight: normal;
+                    color: #AAAAAA;  /* Dimmer gray text for inactive tab */
+                }
+                QTabBar::tab:hover {
+                    background-color: palette(alternate-base);
+                    color: #CCCCCC;  /* Slightly brighter on hover */
+                }
+            """)
+            self.logger.info(f"Panel {self.panel_id} set to INACTIVE state (normal border, dimmer text)")
+    
+    def set_active(self, active: bool):
+        """Set panel active state - called from main window"""
+        self._update_active_state(active)
     
     def mousePressEvent(self, event):
         """Handle mouse press to activate panel"""
