@@ -548,66 +548,69 @@ class FilePanel(QWidget):
     def _update_active_state(self, is_active: bool):
         """Update visual state to show if panel is active"""
         if is_active:
-            # Active panel: Very subtle blue top border + brighter text
+            # Active panel: Very subtle blue top border like VS Code
             self.tab_widget.setStyleSheet("""
                 QTabWidget::pane {
-                    border: 1px solid palette(mid);
+                    border: 1px solid #3c3c3c;
                     border-top: 2px solid #007ACC;
-                    background-color: palette(base);
+                    background-color: transparent;
                 }
                 QTabWidget::tab-bar {
                     alignment: left;
                 }
                 QTabBar::tab {
                     background-color: transparent;
-                    padding: 6px 12px;
+                    padding: 8px 12px;
                     margin-right: 1px;
                     border: none;
-                    font-weight: normal;
-                    color: #FFFFFF;  /* Bright white text for active panel */
+                    font-weight: 500;
+                    color: #CCCCCC;
                     min-width: 60px;
                 }
                 QTabBar::tab:selected {
-                    background-color: palette(base);
-                    font-weight: normal;
-                    color: #FFFFFF;  /* Bright white text for active tab */
+                    background-color: transparent;
+                    font-weight: 500;
+                    color: #FFFFFF;
+                    border: none;  /* Remove all borders first */
+                    border-top: 1px solid #4A90E2;  /* Only top horizontal line */
+                    border-radius: 3px 3px 0px 0px;  /* Rounded top corners only */
                 }
                 QTabBar::tab:hover {
-                    background-color: palette(alternate-base);
+                    background-color: rgba(255, 255, 255, 0.1);
                     color: #FFFFFF;
                 }
             """)
-            self.logger.info(f"Panel {self.panel_id} set to ACTIVE state (subtle blue top border + bright text)")
+            self.logger.info(f"Panel {self.panel_id} set to ACTIVE state (subtle blue top border)")
         else:
-            # Inactive panel: No special border, dimmer text
+            # Inactive panel: No special border, readable text
             self.tab_widget.setStyleSheet("""
                 QTabWidget::pane {
-                    border: 1px solid palette(mid);
-                    background-color: palette(base);
+                    border: 1px solid #3c3c3c;
+                    background-color: transparent;
                 }
                 QTabWidget::tab-bar {
                     alignment: left;
                 }
                 QTabBar::tab {
                     background-color: transparent;
-                    padding: 6px 12px;
+                    padding: 8px 12px;
                     margin-right: 1px;
                     border: none;
                     font-weight: normal;
-                    color: #AAAAAA;  /* Dimmer gray text for inactive panel */
+                    color: #CCCCCC;
                     min-width: 60px;
                 }
                 QTabBar::tab:selected {
-                    background-color: palette(base);
+                    background-color: transparent;
                     font-weight: normal;
-                    color: #AAAAAA;  /* Dimmer gray text for inactive tab */
+                    color: #CCCCCC;
                 }
                 QTabBar::tab:hover {
-                    background-color: palette(alternate-base);
-                    color: #CCCCCC;  /* Slightly brighter on hover */
+                    background-color: rgba(255, 255, 255, 0.05);
+                    color: #FFFFFF;
                 }
             """)
-            self.logger.info(f"Panel {self.panel_id} set to INACTIVE state (normal border, dimmer text)")
+            self.logger.info(f"Panel {self.panel_id} set to INACTIVE state (normal border, readable text)")
     
     def set_active(self, active: bool):
         """Set panel active state - called from main window"""
