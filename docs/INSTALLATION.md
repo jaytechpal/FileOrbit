@@ -2,20 +2,35 @@
 
 ## System Requirements
 
-### Minimum Requirements
-- **Python**: 3.8 or higher
-- **Operating System**: Windows 10+, macOS 10.14+, or Linux (Ubuntu 18.04+)
-- **Memory**: 4GB RAM minimum, 8GB recommended
+### Minimum Requirements (64-bit Only)
+- **Architecture**: x64 (64-bit) systems only - 32-bit systems not supported
+- **Python**: 3.8+ (64-bit) or higher
+- **Operating System**: 
+  - Windows 10 x64 or later
+  - macOS 10.14+ (Intel or Apple Silicon)
+  - Linux x64 (Ubuntu 18.04+, Fedora 30+, or equivalent)
+- **Memory**: 4GB RAM minimum, 8GB recommended for optimal performance
 - **Disk Space**: 500MB for application and dependencies
 
+### Recommended Specifications
+- **Memory**: 16GB+ RAM for handling large files and concurrent operations
+- **Storage**: SSD for improved file operation performance
+- **CPU**: Multi-core processor (4+ cores) for optimal concurrent operations
+
+### 64-bit Performance Features
+- **Large File Support**: Seamless handling of files >4GB
+- **Memory Optimization**: Dynamic scaling from 4GB to 32GB+ systems
+- **Multi-Core Processing**: Concurrent operations across all CPU cores
+- **Intelligent Buffering**: Adaptive buffer sizes (1MB-32MB) based on system capabilities
+
 ### Platform-Specific Features
-- **Windows**: Native shell icons, drive detection, Segoe UI font
-- **macOS**: Finder-style icons, SF Pro Display font, filesystem root navigation
-- **Linux**: Desktop environment icons, Ubuntu font, package file detection
+- **Windows**: Native 64-bit Windows API integration, drive detection, Segoe UI font
+- **macOS**: Universal2 binary (Intel + Apple Silicon), Finder-style icons, SF Pro Display font
+- **Linux**: Native 64-bit performance, Desktop environment icons, Ubuntu font, package file detection
 
 ## Cross-Platform Installation
 
-FileOrbit is designed to work seamlessly across all major platforms with platform-specific optimizations.
+FileOrbit is designed to work seamlessly across all major 64-bit platforms with platform-specific optimizations.
 
 ## Installation Methods
 

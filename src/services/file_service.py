@@ -115,8 +115,17 @@ class FileOperationWorker(QThread):
             self.progress.emit(progress)
     
     def _copy_file_with_progress(self, source: Path, target: Path, total_size: int, copied_so_far: int):
-        """Copy single file with progress reporting"""
-        buffer_size = 1024 * 1024  # 1MB buffer
+        """Copy single file with progress reporting optimized for 64-bit systems"""
+        # Use larger buffer size for 64-bit systems and large files
+        file_size = source.stat().st_size
+        
+        # Dynamic buffer size based on file size for better 64-bit performance
+        if file_size > 1024 * 1024 * 1024:  # Files > 1GB
+            buffer_size = 8 * 1024 * 1024  # 8MB buffer for large files
+        elif file_size > 100 * 1024 * 1024:  # Files > 100MB
+            buffer_size = 4 * 1024 * 1024  # 4MB buffer
+        else:
+            buffer_size = 1 * 1024 * 1024  # 1MB buffer for smaller files
         
         with open(source, 'rb') as src, open(target, 'wb') as dst:
             while True:

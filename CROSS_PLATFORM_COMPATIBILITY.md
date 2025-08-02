@@ -1,31 +1,65 @@
-# Cross-Platform Compatibility Improvements for FileOrbit
+# Cross-Platform Compatibility & 64-bit Optimization for FileOrbit
 
 ## Overview
 
-FileOrbit has been enhanced to ensure full compatibility across Windows, macOS, and Linux platforms. All platform-specific functionality has been properly handled to provide a native experience on each operating system.
+FileOrbit has been enhanced to ensure full compatibility across Windows, macOS, and Linux platforms with comprehensive 64-bit optimizations. All platform-specific functionality has been properly handled to provide a native, high-performance experience on each operating system.
 
-## Improvements Made
+## 64-bit Architecture Requirements
 
-### 1. Configuration and Logging Paths
+**System Requirements:**
+- **Architecture:** x64 (64-bit) systems only - 32-bit systems not supported
+- **Memory:** Minimum 4GB RAM, recommended 8GB+ for optimal performance
+- **Platform Support:**
+  - Windows 10 x64 or later
+  - macOS 10.14+ (Intel or Apple Silicon)
+  - Linux x64 distributions
+
+## Cross-Platform & 64-bit Improvements Made
+
+### 1. 64-bit Memory Management
+
+**Implementation:** Dynamic memory optimization based on system capabilities
+- **Small Systems (4-8GB):** Conservative memory usage with 2MB buffers
+- **Medium Systems (8-16GB):** Balanced performance with 4-8MB buffers  
+- **Large Systems (16GB+):** Aggressive optimization with up to 32MB buffers
+
+**Files Added/Modified:**
+- `platform_config.py` - 64-bit system detection and optimization
+- `src/services/file_service.py` - Memory-aware file operations
+- `main.py` - 64-bit system validation at startup
+
+### 2. Windows API 64-bit Integration
+
+**Before:** Generic ctypes usage without proper type definitions
+**After:** Properly defined 64-bit Windows API function signatures
+
+- **Drive Detection:** Proper `wintypes.DWORD` instead of `c_ulong`
+- **Buffer Handling:** 64-bit compatible buffer management
+- **Network Drives:** Accurate detection with `WNetGetConnectionW` API
+
+**Files Modified:**
+- `src/ui/components/sidebar.py` - 64-bit Windows API integration
+
+### 3. Configuration and Logging Paths
 
 **Before:** Fixed paths that didn't follow platform conventions
-**After:** Platform-specific configuration directories
+**After:** Platform-specific configuration directories with 64-bit optimizations
 
-- **Windows:** `%APPDATA%\FileOrbit\`
-- **macOS/Linux:** `~/.config/fileorbit/`
+- **Windows:** `%APPDATA%\FileOrbit\` with 64-bit registry integration
+- **macOS/Linux:** `~/.config/fileorbit/` with proper filesystem permissions
 
 **Files Modified:**
 - `src/config/settings.py` - Platform-specific config directories
 - `src/utils/logger.py` - Platform-appropriate log directories
 
-### 2. Font Selection
+### 4. Font Selection
 
 **Before:** Hard-coded "Segoe UI" for all platforms
-**After:** Platform-appropriate default fonts
+**After:** Platform-appropriate default fonts optimized for 64-bit rendering
 
-- **Windows:** Segoe UI
-- **macOS:** SF Pro Display  
-- **Linux:** Ubuntu (widely available fallback)
+- **Windows:** Segoe UI with proper scaling for high-DPI 64-bit systems
+- **macOS:** SF Pro Display with Apple Silicon optimization
+- **Linux:** Ubuntu font with 64-bit font rendering
 
 **Implementation:** Added `_get_default_font()` method with safe platform detection
 

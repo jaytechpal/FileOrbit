@@ -2,12 +2,19 @@
 
 ## Development Environment Setup
 
-### Prerequisites
+### Prerequisites (64-bit Development)
 
-1. **Python 3.8+** with development headers
+1. **Python 3.8+ (64-bit)** with development headers - 32-bit Python not supported
 2. **Git** for version control
 3. **Code Editor** (VS Code recommended with Python extension)
 4. **Qt6 Development Tools** (optional, for UI design)
+5. **64-bit System** - Development requires x64 architecture
+
+### System Requirements for Development
+- **Architecture**: x64 (64-bit) development environment only
+- **Memory**: 8GB+ RAM recommended for development (16GB+ for large file testing)
+- **Python**: 64-bit Python 3.8+ installation
+- **Dependencies**: All packages must be 64-bit compatible
 
 ### Initial Setup
 
@@ -16,14 +23,20 @@
 git clone https://github.com/jaypalweb/FileOrbit.git
 cd FileOrbit
 
+# Verify 64-bit Python installation
+python -c "import sys; print('64-bit:', sys.maxsize > 2**32)"
+
 # Create development environment
 python -m venv fileorbit-dev
 source fileorbit-dev/bin/activate  # Linux/macOS
 fileorbit-dev\Scripts\activate      # Windows
 
-# Install development dependencies
+# Install development dependencies (64-bit)
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
+
+# Test 64-bit optimizations
+python platform_config.py
 ```
 
 ### Development Dependencies
@@ -39,6 +52,8 @@ mypy>=0.950
 pre-commit>=2.20.0
 sphinx>=5.0.0
 sphinx-rtd-theme>=1.0.0
+memory_profiler>=0.60.0    # For 64-bit memory profiling
+psutil>=5.9.0              # Required for platform detection
 ```
 
 ## Code Architecture
@@ -48,40 +63,48 @@ sphinx-rtd-theme>=1.0.0
 ```
 FileOrbit/
 ├── src/                    # Source code
-│   ├── core/              # Core application logic
+│   ├── core/              # Core application logic with 64-bit optimizations
 │   ├── ui/                # User interface components
-│   ├── services/          # Business logic services
+│   ├── services/          # Business logic services with memory management
 │   ├── utils/             # Utility functions
 │   └── config/            # Configuration management
-├── tests/                 # Test suite
+├── platform_config.py     # 64-bit system optimization configuration
+├── tests/                 # Test suite including 64-bit performance tests
 ├── docs/                  # Documentation
 ├── resources/             # Static resources
+├── version_info.txt       # Windows 64-bit executable version info
+├── AUDIT_REPORT_64BIT.md  # Comprehensive 64-bit compatibility audit
 └── scripts/               # Build and utility scripts
 ```
 
 ### Design Patterns
 
-FileOrbit follows these architectural patterns:
+FileOrbit follows these architectural patterns optimized for 64-bit systems:
 
 1. **Model-View-Controller (MVC)**:
-   - Models: Data structures and file system interaction
+   - Models: Data structures and file system interaction with 64-bit support
    - Views: UI components and user interaction
-   - Controllers: Business logic and coordination
+   - Controllers: Business logic with memory-aware operations
 
 2. **Signal-Slot Pattern**:
    - Qt's event-driven communication
    - Loose coupling between components
-   - Asynchronous operation support
+   - Asynchronous operation support with CPU core scaling
 
 3. **Service Layer Pattern**:
-   - Separation of business logic
-   - Reusable service components
-   - Dependency injection
+   - Separation of business logic with 64-bit optimizations
+   - Reusable service components with memory management
+   - Dependency injection with platform configuration
 
 4. **Observer Pattern**:
    - File system change monitoring
    - UI state synchronization
-   - Event propagation
+   - Event propagation with efficient batching
+
+5. **Strategy Pattern** (64-bit Optimization):
+   - Platform-specific optimization strategies
+   - Dynamic buffer sizing algorithms
+   - Memory allocation strategies based on system capabilities
 
 ## Coding Standards
 

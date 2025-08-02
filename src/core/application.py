@@ -15,11 +15,12 @@ from src.services.theme_service import ThemeService
 
 
 class FileOrbitApplication:
-    """Main application class"""
+    """Main application class with 64-bit optimizations"""
     
-    def __init__(self):
+    def __init__(self, platform_config=None):
         self.logger = get_logger(__name__)
         self.config = AppConfig()
+        self.platform_config = platform_config
         self.main_window = None
         self.file_service = None
         self.theme_service = None

@@ -1,0 +1,41 @@
+# FileOrbit Development Requirements - 64-bit Optimized
+
+# Testing Framework
+pytest>=7.0.0              # Testing framework with 64-bit support
+pytest-qt>=4.2.0           # Qt application testing
+pytest-cov>=4.0.0          # Code coverage analysis
+pytest-benchmark>=4.0.0    # Performance benchmarking for 64-bit optimizations
+
+# Code Quality
+black>=23.0.0              # Code formatting
+flake8>=6.0.0              # Code linting
+mypy>=1.0.0                # Static type checking
+pre-commit>=2.20.0         # Git hooks for code quality
+
+# Documentation
+sphinx>=5.0.0              # Documentation generation
+sphinx-rtd-theme>=1.0.0    # ReadTheDocs theme
+myst-parser>=1.0.0         # Markdown parser for Sphinx
+
+# Performance Analysis (64-bit specific)
+memory_profiler>=0.60.0    # Memory usage profiling for 64-bit systems
+psutil>=5.9.0              # System resource monitoring (required for platform detection)
+py-spy>=0.3.14             # Performance profiling
+cProfile                   # Built-in profiler for performance analysis
+
+# Build Tools
+pyinstaller>=5.0.0         # 64-bit executable creation
+wheel>=0.40.0              # Package building
+setuptools>=65.0.0         # Package setup tools
+
+# Development Utilities
+ipython>=8.0.0             # Enhanced Python shell
+jupyter>=1.0.0             # Notebook environment for analysis
+matplotlib>=3.5.0          # Performance visualization
+rich>=13.0.0               # Rich terminal output for debugging
+
+# Platform-specific Development (Windows)
+pywin32>=306; sys_platform == "win32"  # Windows API development tools
+
+# Version Control
+gitpython>=3.1.0           # Git integration for development tools

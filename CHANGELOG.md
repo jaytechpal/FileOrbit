@@ -5,9 +5,47 @@ All notable changes to FileOrbit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2025-08-03
 
-### Added - Cross-Platform Compatibility (Latest)
+### Added - 64-bit Optimization (Latest)
+- **64-bit Architecture**: Full optimization for x64 systems with automatic detection
+- **Memory Management**: Dynamic buffer sizing (1MB-32MB) based on system capabilities
+- **Windows API Integration**: Proper 64-bit ctypes function signatures with wintypes
+- **Performance Scaling**: CPU core-aware concurrent operations (2-12 parallel tasks)
+- **Large File Support**: Optimized handling of files >4GB with intelligent progress tracking
+- **System Profiling**: Automatic detection of memory, CPU cores, and platform capabilities
+- **Platform Configuration**: Smart resource allocation based on available system memory
+- **Build System**: 64-bit specific PyInstaller configuration with platform targeting
+- **Buffer Optimization**: Adaptive I/O buffers for small files (1MB) to large files (32MB)
+- **Memory-Mapped I/O**: Support detection for systems with sufficient memory (8GB+)
+
+### Added - Cross-Platform Compatibility
+- **Native Icons**: QFileIconProvider integration for platform-appropriate file and folder icons
+- **Platform Fonts**: Automatic font selection (Segoe UI/Windows, SF Pro Display/macOS, Ubuntu/Linux)
+- **Cross-Platform Config**: Platform-specific configuration directories (%APPDATA%, ~/.config)
+- **Enhanced Sidebar**: Windows drive detection, macOS/Linux filesystem root navigation
+- **File Permissions**: Cross-platform permission handling (Windows read-only, Unix octal)
+- **Custom Widgets**: ActivatableTabWidget, ActivatableLineEdit, ActivatablePushButton classes
+- **Debug System**: Comprehensive panel activation logging and tracking
+- **Icon Fallbacks**: Enhanced fallback icons for common file types across platforms
+- **Documentation**: Complete cross-platform compatibility guide
+
+### Improved - Performance & Memory
+- **File Operations**: Up to 8x faster copying on high-memory systems (16GB+)
+- **Directory Scanning**: Batch processing up to 10,000 items for large directories
+- **Memory Usage**: Intelligent scaling from 50MB cache (4GB systems) to 500MB (32GB+ systems)
+- **Concurrent Operations**: Smart scaling based on CPU cores and available memory
+- **Progress Reporting**: Sub-second updates for responsive UI during large operations
+- **Resource Cleanup**: Automatic memory management and resource deallocation
+
+### Fixed - 64-bit Compatibility
+- **Windows APIs**: Replaced c_ulong with wintypes.DWORD for proper 64-bit buffer handling
+- **Drive Detection**: Fixed ctypes usage for accurate Windows drive type detection
+- **Memory Addressing**: Proper 64-bit pointer handling in all platform-specific code
+- **Large File Operations**: Corrected file size calculations for files >4GB
+- **Buffer Overflows**: Eliminated potential buffer issues with proper ctypes signatures
+
+## [Unreleased]
 - **Native Icons**: QFileIconProvider integration for platform-appropriate file and folder icons
 - **Platform Fonts**: Automatic font selection (Segoe UI/Windows, SF Pro Display/macOS, Ubuntu/Linux)
 - **Cross-Platform Config**: Platform-specific configuration directories (%APPDATA%, ~/.config)

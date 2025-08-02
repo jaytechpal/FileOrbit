@@ -40,36 +40,49 @@ def install_dependencies():
 
 
 def build_executable():
-    """Build executable using PyInstaller"""
-    print("Building executable...")
+    """Build executable using PyInstaller optimized for 64-bit systems"""
+    print("Building 64-bit executable...")
+    
+    # Common 64-bit optimization options
+    base_cmd = [
+        "pyinstaller",
+        "--clean",  # Clean PyInstaller cache
+        "--noconfirm",  # Replace output directory without confirmation
+    ]
     
     # Determine platform-specific options
     if sys.platform == "win32":
-        # Windows
-        cmd = [
-            "pyinstaller",
+        # Windows 64-bit specific
+        cmd = base_cmd + [
             "--windowed",
             "--onefile", 
-            "--name", "FileOrbit",
+            "--name", "FileOrbit-x64",
             "--icon", "resources/icons/app_icon.ico",
+            "--version-file", "version_info.txt",  # Will create this
+            "--add-data", "resources;resources",
+            "--exclude-module", "tkinter",  # Exclude unnecessary modules
+            "--optimize", "2",  # Python optimization level
             "main.py"
         ]
     elif sys.platform == "darwin":
-        # macOS
-        cmd = [
-            "pyinstaller",
+        # macOS 64-bit specific (Apple Silicon + Intel)
+        cmd = base_cmd + [
             "--windowed",
             "--onefile",
-            "--name", "FileOrbit",
+            "--name", "FileOrbit-universal",
             "--icon", "resources/icons/app_icon.icns",
+            "--add-data", "resources:resources",
+            "--target-arch", "universal2",  # Support both Intel and Apple Silicon
+            "--optimize", "2",
             "main.py"
         ]
     else:
-        # Linux
-        cmd = [
-            "pyinstaller",
+        # Linux 64-bit specific
+        cmd = base_cmd + [
             "--onefile",
-            "--name", "FileOrbit",
+            "--name", "FileOrbit-x64",
+            "--add-data", "resources:resources",
+            "--optimize", "2",
             "main.py"
         ]
     

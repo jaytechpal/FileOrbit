@@ -2,23 +2,36 @@
 
 ## Overview
 
-FileOrbit uses a modular UI architecture with reusable components built on PySide6/Qt6. This document details the structure and functionality of each UI component.
+FileOrbit uses a modular UI architecture with reusable components built on PySide6/Qt6, optimized for 64-bit systems with intelligent memory management and performance scaling.
 
 ## Architecture
 
 ```
 src/ui/
-├── main_window.py          # Main application window
+├── main_window.py          # Main application window with 64-bit optimizations
 ├── components/             # Reusable UI components
-│   ├── file_panel.py      # Core dual-pane file browser
+│   ├── file_panel.py      # Core dual-pane file browser with large file support
 │   ├── toolbar.py         # Navigation and action toolbar
-│   ├── statusbar.py       # Status information display
-│   ├── sidebar.py         # Quick access navigation
+│   ├── statusbar.py       # Status information display with memory usage
+│   ├── sidebar.py         # Quick access navigation with 64-bit drive detection
 │   └── command_palette.py # Command palette interface
 ├── dialogs/               # Modal dialogs
 │   └── preferences_dialog.py
 └── themes/                # Theme management
 ```
+
+## 64-bit Performance Features
+
+### Memory Management
+- **Dynamic Buffer Allocation**: Components automatically adjust memory usage based on system capabilities
+- **Efficient Rendering**: Large directory listings optimized for 64-bit memory addressing
+- **Resource Scaling**: UI responsiveness maintained during multi-GB file operations
+- **Cache Management**: Intelligent caching with automatic cleanup based on available memory
+
+### Platform Integration
+- **Native APIs**: 64-bit Windows API integration for accurate system information
+- **Cross-Platform Icons**: QFileIconProvider with 64-bit compatibility
+- **Memory Profiling**: Built-in memory usage monitoring and optimization
 
 ## Core Components
 

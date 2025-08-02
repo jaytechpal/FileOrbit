@@ -16,6 +16,23 @@ from src.utils.logger import get_logger
 # Windows-specific imports for drive type detection
 if os.name == 'nt':
     import ctypes
+    from ctypes import wintypes
+    
+    # Properly define Windows API function signatures for 64-bit compatibility
+    kernel32 = ctypes.windll.kernel32
+    mpr = ctypes.windll.mpr
+    
+    # GetDriveTypeW function signature
+    kernel32.GetDriveTypeW.argtypes = [wintypes.LPCWSTR]
+    kernel32.GetDriveTypeW.restype = wintypes.UINT
+    
+    # WNetGetConnectionW function signature  
+    mpr.WNetGetConnectionW.argtypes = [
+        wintypes.LPCWSTR,  # lpLocalName
+        wintypes.LPWSTR,   # lpRemoteName
+        wintypes.LPDWORD   # lpnLength
+    ]
+    mpr.WNetGetConnectionW.restype = wintypes.DWORD
     
     # Windows drive type constants
     DRIVE_UNKNOWN = 0
@@ -115,18 +132,20 @@ class DriveItemWidget(QWidget):
         """Get drive type using platform-appropriate methods"""
         if os.name == 'nt':  # Windows
             try:
-                # Windows API drive type detection
-                drive_type = ctypes.windll.kernel32.GetDriveTypeW(drive_path)
+                # Windows API drive type detection with proper 64-bit types
+                drive_type = kernel32.GetDriveTypeW(drive_path)
                 drive_letter = drive_path[0].upper()
                 
-                # Additional check for network mapped drives
+                # Additional check for network mapped drives with proper buffer handling
                 try:
-                    buffer_size = 256
-                    buffer = ctypes.create_unicode_buffer(buffer_size)
-                    result = ctypes.windll.mpr.WNetGetConnectionW(
-                        drive_letter + ":", buffer, ctypes.byref(ctypes.c_ulong(buffer_size))
+                    buffer_size = wintypes.DWORD(256)
+                    buffer = ctypes.create_unicode_buffer(buffer_size.value)
+                    result = mpr.WNetGetConnectionW(
+                        drive_letter + ":", 
+                        buffer, 
+                        ctypes.byref(buffer_size)
                     )
-                    if result == 0:  # SUCCESS
+                    if result == 0:  # NO_ERROR
                         return "network"  # It's a mapped network drive
                 except Exception:
                     pass  # Not a network drive or error occurred

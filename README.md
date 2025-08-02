@@ -1,23 +1,34 @@
-# FileOrbit - Modern Cross-Platform File Manager
+# FileOrbit - Modern 64-bit Cross-Platform File Manager
 
-A sleek, modern dual-pane file manager built with Python and PySide6, inspired by OneCommander's elegant interface. FileOrbit provides a native experience across Windows, macOS, and Linux with platform-specific optimizations.
+A sleek, modern dual-pane file manager built with Python and PySide6, inspired by OneCommander's elegant interface. FileOrbit provides a native experience across Windows, macOS, and Linux with platform-specific optimizations and 64-bit performance enhancements.
+
+## ⚡ 64-bit Optimized Performance
+
+FileOrbit is specifically designed and optimized for modern 64-bit systems:
+
+- **Architecture**: x64 native with automatic system detection
+- **Memory Management**: Intelligent scaling from 4GB to 32GB+ systems
+- **Large File Support**: Seamless handling of files >4GB
+- **Multi-Core Processing**: Scales operations across all CPU cores
+- **Buffer Optimization**: Dynamic buffer sizing (1MB to 32MB) based on system capabilities
 
 ## Features
 
 ### Core Features
 - **Dual-Pane Interface**: Side-by-side file browsing like OneCommander
 - **Cross-Platform Native**: Optimized for Windows, macOS, and Linux with platform-specific icons and fonts
+- **64-bit Performance**: Memory-aware operations with intelligent resource scaling
 - **Modern UI**: Clean, responsive interface with multiple themes
-- **Fast File Operations**: Multi-threaded copy/move/delete operations
+- **Fast File Operations**: Multi-threaded copy/move/delete operations with 64-bit optimizations
 - **Real-time Updates**: Automatic refresh when files change
 - **Panel Focus System**: Advanced panel activation tracking with comprehensive debugging
 
 ### File Operations
-- Copy, move, delete files and folders
-- Progress tracking for long operations
-- Background operations with QThread
-- File integrity verification
-- Batch operations support
+- Copy, move, delete files and folders with 64-bit buffer optimization
+- Progress tracking for long operations with sub-second updates
+- Background operations with QThread and concurrent processing
+- File integrity verification for large files
+- Batch operations support with intelligent memory management
 - Cross-platform permission handling
 
 ### User Interface
@@ -30,27 +41,49 @@ A sleek, modern dual-pane file manager built with Python and PySide6, inspired b
 - Enhanced sidebar with platform-specific navigation
 
 ### Cross-Platform Features
-- **Windows**: Drive detection (C:\, D:\, etc.), shell integration icons
-- **macOS**: Filesystem root navigation, Finder-style icons, SF Pro font
-- **Linux**: Desktop environment icons, package file detection (.deb, .rpm, .AppImage)
-- **All Platforms**: User directories, native look and feel
+- **Windows**: 64-bit Windows API integration, drive detection (C:\, D:\, etc.), shell integration icons
+- **macOS**: Universal2 binary (Intel + Apple Silicon), Filesystem root navigation, Finder-style icons, SF Pro font
+- **Linux**: Native 64-bit performance, Desktop environment icons, package file detection (.deb, .rpm, .AppImage)
+- **All Platforms**: User directories, native look and feel, memory-optimized operations
 
 ## Technology Stack
 
-- **Python 3.8+**: Core language with cross-platform compatibility
-- **PySide6**: Modern Qt6 bindings for native GUI
+- **Python 3.8+ (64-bit)**: Core language with cross-platform compatibility
+- **PySide6**: Modern Qt6 bindings for native 64-bit GUI
 - **QFileIconProvider**: Platform-specific native system icons
+- **Windows APIs**: Proper 64-bit ctypes integration for drive detection
 - **Pathlib**: Cross-platform path handling
 - **Watchdog**: File system monitoring
-- **Threading**: QThread for non-blocking operations
+- **Threading**: QThread for non-blocking operations with CPU core scaling
+- **PSUtil**: System resource monitoring and optimization
 
 ## Performance
 
-FileOrbit is optimized for:
-- **Large Directories**: Efficient handling of thousands of files
+FileOrbit is optimized for modern 64-bit systems:
+- **Large Directories**: Efficient handling of thousands of files with batch processing
+- **Large Files**: Seamless support for files >4GB with optimized buffer management
+- **Memory Scaling**: Automatic optimization for systems from 4GB to 32GB+ RAM
+- **Multi-Core Processing**: Concurrent operations scaling across all available CPU cores
 - **Real-time Updates**: File system monitoring with minimal overhead
-- **Memory Usage**: Careful resource management and cleanup
-- **Cross-Platform**: Native performance on Windows, macOS, and Linux
+- **Memory Usage**: Intelligent resource management with automatic cleanup
+- **Cross-Platform**: Native 64-bit performance on Windows, macOS, and Linux
+
+## System Requirements
+
+### Minimum Requirements
+- **Architecture**: x64 (64-bit) systems only
+- **Operating System**: 
+  - Windows 10 x64 or later
+  - macOS 10.14+ (Intel or Apple Silicon)
+  - Linux x64 (Ubuntu 18.04+, Fedora 30+, or equivalent)
+- **Memory**: 4GB RAM minimum
+- **Storage**: 100MB available space
+- **Python**: 3.8+ (64-bit)
+
+### Recommended Specifications
+- **Memory**: 8GB+ RAM for optimal performance
+- **Storage**: SSD for faster file operations
+- **CPU**: Multi-core processor for concurrent operations
 
 ## License
 
@@ -105,7 +138,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Recent Improvements and Status
 
-### ✅ Cross-Platform Compatibility (Latest)
+### ✅ 64-bit Optimization (Latest)
+- **Architecture Detection**: Automatic 64-bit system validation and optimization
+- **Memory Management**: Dynamic buffer sizing (1MB-32MB) based on system capabilities  
+- **Windows API Integration**: Proper 64-bit ctypes function signatures for drive detection
+- **Performance Scaling**: CPU core-aware concurrent operations (2-12 parallel tasks)
+- **Large File Support**: Optimized handling of files >4GB with progress tracking
+- **System Profiling**: Automatic detection of memory, CPU, and platform capabilities
+
+### ✅ Cross-Platform Compatibility 
 - **Native Icons**: QFileIconProvider integration for platform-appropriate file/folder icons
 - **Platform Fonts**: Automatic font selection (Segoe UI on Windows, SF Pro Display on macOS, Ubuntu on Linux)
 - **Configuration**: Platform-specific config directories (%APPDATA% on Windows, ~/.config on Unix)
@@ -128,12 +169,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### 📖 User Documentation
 - **[Installation Guide](docs/INSTALLATION.md)** - Complete setup instructions for all platforms
+- **[64-bit Audit Report](AUDIT_REPORT_64BIT.md)** - Comprehensive 64-bit optimization details
 - **[Cross-Platform Guide](CROSS_PLATFORM_COMPATIBILITY.md)** - Platform-specific features and compatibility
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### 🔧 Developer Documentation
 - **[Development Guide](docs/DEVELOPMENT_GUIDE.md)** - Contributing and development setup
 - **[UI Components](docs/UI_COMPONENTS.md)** - Component architecture and APIs
+- **[Platform Configuration](platform_config.py)** - 64-bit system optimization settings
 
 ## Quick Start
 

@@ -1,20 +1,23 @@
-# FileOrbit Requirements
+# FileOrbit Requirements - 64-bit Optimized
 
 # Core Dependencies
-PySide6>=6.5.0
-watchdog>=3.0.0
+PySide6>=6.5.0          # Qt6 GUI framework (64-bit native)
+watchdog>=3.0.0         # File system monitoring
 
 # Utility Dependencies
-Pillow>=10.0.0  # For image handling
-psutil>=5.9.0   # For system information
-send2trash>=1.8.0  # For safe file deletion
+Pillow>=10.0.0          # Image handling and processing
+psutil>=5.9.0           # System information and performance monitoring
+send2trash>=1.8.0       # Safe file deletion
 
 # Development Dependencies
-pytest>=7.0.0
-pytest-qt>=4.2.0
-black>=23.0.0
-flake8>=6.0.0
-mypy>=1.0.0
+pytest>=7.0.0           # Testing framework
+pytest-qt>=4.2.0        # Qt testing support
+black>=23.0.0           # Code formatting
+flake8>=6.0.0           # Code linting
+mypy>=1.0.0             # Type checking
 
-# Optional Dependencies
-pywin32>=306; sys_platform == "win32"  # Windows-specific features
+# Build Dependencies  
+pyinstaller>=5.0.0      # 64-bit executable creation
+
+# Platform-specific Dependencies
+pywin32>=306; sys_platform == "win32"  # Windows-specific features and APIs
