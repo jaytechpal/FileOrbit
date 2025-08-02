@@ -22,6 +22,7 @@ class FileListWidget(QListWidget):
     
     files_dropped = Signal(list)  # List of file paths
     context_menu_requested = Signal(object, object)  # position, selected_items
+    clicked_for_activation = Signal()  # Emitted when widget is clicked for panel activation
     
     def __init__(self):
         super().__init__()
@@ -34,6 +35,11 @@ class FileListWidget(QListWidget):
         # Connect context menu
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self._show_context_menu)
+    
+    def mousePressEvent(self, event):
+        """Handle mouse press to activate parent panel"""
+        self.clicked_for_activation.emit()
+        super().mousePressEvent(event)
     
     def dragEnterEvent(self, event):
         """Handle drag enter event"""
@@ -141,6 +147,7 @@ class FilePanel(QWidget):
         self.address_bar = QLineEdit()
         self.address_bar.setText(str(path or self.current_path))
         self.address_bar.returnPressed.connect(self._navigate_to_address)
+        self.address_bar.mousePressEvent = lambda event: (self._on_child_widget_clicked(), QLineEdit.mousePressEvent(self.address_bar, event))
         
         address_layout.addWidget(back_btn)
         address_layout.addWidget(forward_btn)
@@ -155,6 +162,7 @@ class FilePanel(QWidget):
         self.file_list_widget.context_menu_requested.connect(self._show_file_context_menu)
         self.file_list_widget.itemSelectionChanged.connect(self._on_selection_changed)
         self.file_list_widget.itemDoubleClicked.connect(self._on_item_double_clicked)
+        self.file_list_widget.clicked_for_activation.connect(self._on_child_widget_clicked)
         
         tab_layout.addWidget(self.file_list_widget)
         
@@ -425,7 +433,13 @@ class FilePanel(QWidget):
             # In a real implementation, you'd show a properties dialog
             self.status_message.emit("Properties dialog")
     
+    def _on_child_widget_clicked(self):
+        """Handle child widget click to activate panel"""
+        self.logger.info(f"Child widget in panel {self.panel_id} clicked - emitting panel_activated signal")
+        self.panel_activated.emit(self.panel_id)
+    
     def mousePressEvent(self, event):
         """Handle mouse press to activate panel"""
+        self.logger.info(f"Panel {self.panel_id} clicked - emitting panel_activated signal")
         self.panel_activated.emit(self.panel_id)
         super().mousePressEvent(event)

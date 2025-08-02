@@ -270,14 +270,18 @@ class MainWindow(QMainWindow):
     
     def _on_panel_activated(self, panel_id):
         """Handle panel activation"""
+        self.logger.info(f"Panel activated: {panel_id}")
         if panel_id == "left":
             self.active_panel = self.left_panel
         elif panel_id == "right":
             self.active_panel = self.right_panel
+        # Update status to show which panel is active
+        self.status_bar.show_message(f"Active panel: {panel_id}", 2000)
     
     def _on_sidebar_location_changed(self, path):
         """Handle sidebar location change"""
         active_panel = self._get_active_panel()
+        self.logger.info(f"Sidebar navigation to {path}, active panel: {active_panel.panel_id if active_panel else 'None'}")
         if active_panel:
             active_panel.navigate_to(Path(path))
     
