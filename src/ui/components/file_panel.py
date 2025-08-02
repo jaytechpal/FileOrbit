@@ -5,6 +5,8 @@ File Panel - Core dual-pane component
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+import os
+import sys
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QListWidget,
@@ -124,8 +126,12 @@ class FilePanel(QWidget):
         self.file_list_widget = None
         self.path_buttons = []
         
-        # Icon provider for Windows-style file icons
+        # Icon provider for native file icons
         self.icon_provider = QFileIconProvider()
+        
+        # Detect platform for platform-specific icon handling
+        self.platform = sys.platform
+        self.logger.info(f"Platform detected: {self.platform} - Using platform-appropriate icons")
         
         self._setup_ui()
         self._connect_signals()
@@ -236,7 +242,7 @@ class FilePanel(QWidget):
             if self.current_path.parent != self.current_path:
                 parent_item = QListWidgetItem("..")
                 parent_item.setData(Qt.UserRole, str(self.current_path.parent))
-                parent_item.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
+                parent_item.setIcon(self._get_parent_directory_icon())
                 self.file_list_widget.addItem(parent_item)
             
             # Get directory contents
@@ -293,25 +299,68 @@ class FilePanel(QWidget):
         return True
     
     def _get_folder_icon(self) -> QIcon:
-        """Get Windows-style folder icon"""
-        # Use Qt's standard folder icon which matches Windows style
-        return self.style().standardIcon(QStyle.SP_DirIcon)
+        """Get platform-appropriate folder icon"""
+        # QFileIconProvider works well across all platforms and respects system themes
+        folder_info = QFileInfo()
+        folder_info.setFile(".")  # Current directory
+        folder_icon = self.icon_provider.icon(QFileIconProvider.Folder)
+        
+        # If QFileIconProvider doesn't work, fall back to Qt standard icons
+        if folder_icon.isNull():
+            return self.style().standardIcon(QStyle.SP_DirIcon)
+        return folder_icon
     
     def _get_file_icon(self, file_path: Path) -> QIcon:
-        """Get Windows-style file icon based on file type"""
+        """Get platform-appropriate file icon based on file type"""
         try:
-            # Use QFileIconProvider to get system icons for file types
+            # Use QFileIconProvider which respects system file associations
+            # This works on Windows (shell icons), macOS (Finder icons), and Linux (desktop environment icons)
             file_info = QFileInfo(str(file_path))
             icon = self.icon_provider.icon(file_info)
             
-            # If no specific icon found, use generic file icon
+            # Enhanced fallback system based on file extension
             if icon.isNull():
-                return self.style().standardIcon(QStyle.SP_FileIcon)
+                icon = self._get_fallback_icon(file_path)
+            
             return icon
         except Exception as e:
             self.logger.warning(f"Error getting icon for {file_path}: {e}")
-            # Fallback to generic file icon
+            # Final fallback to generic file icon
             return self.style().standardIcon(QStyle.SP_FileIcon)
+    
+    def _get_fallback_icon(self, file_path: Path) -> QIcon:
+        """Get fallback icons for common file types across platforms"""
+        extension = file_path.suffix.lower()
+        
+        # Common file type mappings that work well across platforms
+        if extension in ['.txt', '.log', '.md', '.readme']:
+            return self.style().standardIcon(QStyle.SP_FileIcon)
+        elif extension in ['.pdf']:
+            return self.style().standardIcon(QStyle.SP_FileIcon)
+        elif extension in ['.exe', '.app', '.deb', '.rpm', '.dmg']:
+            return self.style().standardIcon(QStyle.SP_ComputerIcon)
+        elif extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg']:
+            return self.style().standardIcon(QStyle.SP_FileIcon)
+        elif extension in ['.mp3', '.wav', '.flac', '.aac', '.ogg']:
+            return self.style().standardIcon(QStyle.SP_MediaVolume)
+        elif extension in ['.mp4', '.avi', '.mkv', '.mov', '.wmv']:
+            return self.style().standardIcon(QStyle.SP_MediaPlay)
+        elif extension in ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2']:
+            return self.style().standardIcon(QStyle.SP_DirIcon)  # Archive as folder-like
+        else:
+            return self.style().standardIcon(QStyle.SP_FileIcon)
+    
+    def _get_parent_directory_icon(self) -> QIcon:
+        """Get platform-appropriate parent directory icon"""
+        # Try to get a native "up" or "parent" icon
+        if self.platform == "darwin":  # macOS
+            # macOS Finder uses a specific up arrow
+            return self.style().standardIcon(QStyle.SP_ArrowUp)
+        elif self.platform.startswith("linux"):  # Linux
+            # Linux desktop environments often use a folder with arrow
+            return self.style().standardIcon(QStyle.SP_FileDialogToParent)
+        else:  # Windows and others
+            return self.style().standardIcon(QStyle.SP_FileDialogToParent)
     
     def _create_file_tooltip(self, file_info: Dict[str, Any]) -> str:
         """Create tooltip text for file"""
