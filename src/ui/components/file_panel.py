@@ -9,9 +9,10 @@ from datetime import datetime
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QListWidget,
     QListWidgetItem, QLabel, QLineEdit, QPushButton, QSplitter,
-    QTreeWidget, QTreeWidgetItem, QHeaderView, QMenu, QMessageBox, QStyle
+    QTreeWidget, QTreeWidgetItem, QHeaderView, QMenu, QMessageBox, QStyle,
+    QFileIconProvider
 )
-from PySide6.QtCore import Qt, Signal, QTimer, QMimeData, QUrl
+from PySide6.QtCore import Qt, Signal, QTimer, QMimeData, QUrl, QFileInfo
 from PySide6.QtGui import QIcon, QPixmap, QDrag, QAction
 
 from src.utils.logger import get_logger
@@ -123,6 +124,9 @@ class FilePanel(QWidget):
         self.file_list_widget = None
         self.path_buttons = []
         
+        # Icon provider for Windows-style file icons
+        self.icon_provider = QFileIconProvider()
+        
         self._setup_ui()
         self._connect_signals()
         self._refresh_file_list()
@@ -232,7 +236,7 @@ class FilePanel(QWidget):
             if self.current_path.parent != self.current_path:
                 parent_item = QListWidgetItem("..")
                 parent_item.setData(Qt.UserRole, str(self.current_path.parent))
-                parent_item.setIcon(self._get_folder_icon())
+                parent_item.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
                 self.file_list_widget.addItem(parent_item)
             
             # Get directory contents
@@ -289,14 +293,25 @@ class FilePanel(QWidget):
         return True
     
     def _get_folder_icon(self) -> QIcon:
-        """Get folder icon"""
-        # In a real implementation, you'd load actual icons
-        return QIcon()  # Placeholder
+        """Get Windows-style folder icon"""
+        # Use Qt's standard folder icon which matches Windows style
+        return self.style().standardIcon(QStyle.SP_DirIcon)
     
     def _get_file_icon(self, file_path: Path) -> QIcon:
-        """Get file icon based on extension"""
-        # In a real implementation, you'd have different icons for different file types
-        return QIcon()  # Placeholder
+        """Get Windows-style file icon based on file type"""
+        try:
+            # Use QFileIconProvider to get system icons for file types
+            file_info = QFileInfo(str(file_path))
+            icon = self.icon_provider.icon(file_info)
+            
+            # If no specific icon found, use generic file icon
+            if icon.isNull():
+                return self.style().standardIcon(QStyle.SP_FileIcon)
+            return icon
+        except Exception as e:
+            self.logger.warning(f"Error getting icon for {file_path}: {e}")
+            # Fallback to generic file icon
+            return self.style().standardIcon(QStyle.SP_FileIcon)
     
     def _create_file_tooltip(self, file_info: Dict[str, Any]) -> str:
         """Create tooltip text for file"""
