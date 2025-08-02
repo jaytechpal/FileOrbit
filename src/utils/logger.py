@@ -4,6 +4,7 @@ Logging utilities for FileOrbit application
 
 import logging
 import sys
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -11,8 +12,11 @@ from typing import Optional
 def setup_logger(name: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
     """Setup application logger with file and console handlers"""
     
-    # Create logs directory
-    log_dir = Path.home() / ".fileorbit" / "logs"
+    # Create logs directory - platform appropriate
+    if os.name == 'nt':  # Windows
+        log_dir = Path(os.environ.get('APPDATA', '')) / "FileOrbit" / "logs"
+    else:  # macOS/Linux
+        log_dir = Path.home() / ".config" / "fileorbit" / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     
     # Create logger

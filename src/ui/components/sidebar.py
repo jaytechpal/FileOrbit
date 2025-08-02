@@ -49,19 +49,21 @@ class SideBar(QWidget):
         # Clear existing items
         self.tree.clear()
         
-        # Add common locations
+        # Add common locations that exist on all platforms
         locations = [
             ("Home", str(Path.home())),
-            ("Desktop", str(Path.home() / "Desktop")),
-            ("Documents", str(Path.home() / "Documents")),
-            ("Downloads", str(Path.home() / "Downloads")),
-            ("Pictures", str(Path.home() / "Pictures")),
-            ("Music", str(Path.home() / "Music")),
-            ("Videos", str(Path.home() / "Videos")),
         ]
         
-        # Add system drives (Windows)
-        if os.name == 'nt':
+        # Add platform-specific common directories
+        common_dirs = ["Desktop", "Documents", "Downloads", "Pictures", "Music", "Videos"]
+        for dir_name in common_dirs:
+            dir_path = Path.home() / dir_name
+            if dir_path.exists():
+                locations.append((dir_name, str(dir_path)))
+        
+        # Add system-specific locations
+        if os.name == 'nt':  # Windows
+            # Add drives section
             drives_item = QTreeWidgetItem(self.tree, ["Drives"])
             drives_item.setExpanded(True)
             
@@ -69,6 +71,28 @@ class SideBar(QWidget):
             for drive in self._get_windows_drives():
                 drive_item = QTreeWidgetItem(drives_item, [f"{drive}:\\"])
                 drive_item.setData(0, Qt.UserRole, f"{drive}:\\")
+        else:  # macOS and Linux
+            # Add filesystem root
+            system_item = QTreeWidgetItem(self.tree, ["System"])
+            system_item.setExpanded(True)
+            
+            # Add root filesystem
+            root_item = QTreeWidgetItem(system_item, ["Root (/)"])
+            root_item.setData(0, Qt.UserRole, "/")
+            
+            # Add common Unix directories if they exist
+            unix_dirs = [
+                ("Applications", "/Applications"),  # macOS
+                ("usr", "/usr"),
+                ("opt", "/opt"),
+                ("var", "/var"),
+                ("tmp", "/tmp"),
+            ]
+            
+            for name, path in unix_dirs:
+                if Path(path).exists():
+                    item = QTreeWidgetItem(system_item, [name])
+                    item.setData(0, Qt.UserRole, path)
         
         # Add common locations
         favorites_item = QTreeWidgetItem(self.tree, ["Favorites"])

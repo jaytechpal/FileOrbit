@@ -22,7 +22,7 @@ class AppConfig:
         self.defaults = {
             "appearance": {
                 "theme": "dark",
-                "font_family": "Segoe UI",
+                "font_family": self._get_default_font(),
                 "font_size": 10,
                 "show_hidden_files": False,
                 "dual_pane_mode": True
@@ -61,6 +61,22 @@ class AppConfig:
         
         config_dir.mkdir(parents=True, exist_ok=True)
         return config_dir
+    
+    def _get_default_font(self) -> str:
+        """Get platform-appropriate default font"""
+        if os.name == 'nt':  # Windows
+            return "Segoe UI"
+        else:
+            # Check for macOS or Linux more safely
+            try:
+                import platform
+                system = platform.system()
+                if system == 'Darwin':  # macOS
+                    return "SF Pro Display"
+                else:  # Linux and others
+                    return "Ubuntu"
+            except ImportError:
+                return "Ubuntu"  # Safe fallback
     
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration from file"""

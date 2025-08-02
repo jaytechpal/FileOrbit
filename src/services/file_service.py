@@ -274,6 +274,19 @@ class FileService(QObject):
         """Get detailed file information"""
         try:
             stat = path.stat()
+            
+            # Handle permissions cross-platform
+            if os.name == 'nt':  # Windows
+                # Windows doesn't use Unix-style permissions
+                permissions = "---"  # Placeholder
+                # Check if read-only
+                if stat.st_mode & 0o200 == 0:  # No write permission
+                    permissions = "r--"
+                else:
+                    permissions = "rw-"
+            else:  # Unix-like systems (macOS, Linux)
+                permissions = oct(stat.st_mode)[-3:]
+            
             return {
                 "name": path.name,
                 "path": str(path),
@@ -282,7 +295,7 @@ class FileService(QObject):
                 "created": datetime.fromtimestamp(stat.st_ctime),
                 "is_directory": path.is_dir(),
                 "is_file": path.is_file(),
-                "permissions": oct(stat.st_mode)[-3:],
+                "permissions": permissions,
                 "extension": path.suffix.lower() if path.is_file() else ""
             }
         except (OSError, IOError) as e:
