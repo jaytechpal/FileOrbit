@@ -586,6 +586,7 @@ class FilePanel(QWidget):
             self.tab_widget.setStyleSheet("""
                 QTabWidget::pane {
                     border: 1px solid #3c3c3c;
+                    border-top: 2px solid #3c3c3c;
                     background-color: transparent;
                 }
                 QTabWidget::tab-bar {
@@ -604,6 +605,9 @@ class FilePanel(QWidget):
                     background-color: transparent;
                     font-weight: normal;
                     color: #CCCCCC;
+                    border: none;  /* Remove all borders first */
+                    border-top: 1px solid transparent;  /* Same border space as active, but transparent */
+                    border-radius: 3px 3px 0px 0px;  /* Same border radius as active */
                 }
                 QTabBar::tab:hover {
                     background-color: rgba(255, 255, 255, 0.05);
