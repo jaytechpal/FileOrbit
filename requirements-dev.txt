@@ -5,6 +5,10 @@ pytest>=7.0.0              # Testing framework with 64-bit support
 pytest-qt>=4.2.0           # Qt application testing
 pytest-cov>=4.0.0          # Code coverage analysis
 pytest-benchmark>=4.0.0    # Performance benchmarking for 64-bit optimizations
+pytest-asyncio>=0.21.0     # Async testing support
+pytest-mock>=3.10.0        # Mocking framework
+pytest-xdist>=3.0.0        # Parallel test execution for 64-bit systems
+pytest-timeout>=2.1.0      # Test timeout handling
 
 # Code Quality
 black>=23.0.0              # Code formatting

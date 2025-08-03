@@ -1,4 +1,18 @@
 # FileOrbit Requirements - 64-bit Optimized
+# 
+# Installation Instructions:
+# 
+# Windows:
+#   python -m venv fileorbit-env
+#   .\fileorbit-env\Scripts\Activate.ps1
+#   pip install -r requirements.txt
+# 
+# macOS/Linux:
+#   python3 -m venv fileorbit-env
+#   source fileorbit-env/bin/activate
+#   pip install -r requirements.txt
+#
+# For testing documentation, see docs/TESTING.md
 
 # Core Dependencies
 PySide6>=6.5.0          # Qt6 GUI framework (64-bit native)
@@ -12,6 +26,8 @@ send2trash>=1.8.0       # Safe file deletion
 # Development Dependencies
 pytest>=7.0.0           # Testing framework
 pytest-qt>=4.2.0        # Qt testing support
+pytest-benchmark>=4.0.0 # Performance testing
+pytest-asyncio>=0.21.0  # Async testing support
 black>=23.0.0           # Code formatting
 flake8>=6.0.0           # Code linting
 mypy>=1.0.0             # Type checking
