@@ -46,6 +46,56 @@ FileOrbit is specifically designed and optimized for modern 64-bit systems:
 - **Linux**: Native 64-bit performance, Desktop environment icons, package file detection (.deb, .rpm, .AppImage)
 - **All Platforms**: User directories, native look and feel, memory-optimized operations
 
+## Screenshots & Visual Features
+
+> **Note**: Screenshots are currently being captured to showcase FileOrbit's interface and capabilities. Visual documentation will be available soon!
+
+### Interface Overview
+FileOrbit features a clean, modern dual-pane interface optimized for productivity:
+
+<!-- Screenshots will be added here -->
+```markdown
+![FileOrbit Main Interface](docs/screenshots/features/main-window-overview.png)
+*Main FileOrbit interface showing dual-pane layout with integrated sidebar*
+```
+
+### Key Features in Action
+
+#### Dual-Pane File Management
+<!-- ![Dual-Pane Layout](docs/screenshots/features/dual-pane-layout.png) -->
+*Side-by-side file browsing with independent navigation*
+
+#### Large File Operations (64-bit Optimization)
+<!-- ![Large File Handling](docs/screenshots/features/large-file-handling.png) -->
+*Seamless handling of files >2GB with real-time progress tracking*
+
+#### Cross-Platform Drive Detection
+<!-- ![Drive Detection](docs/screenshots/features/sidebar-drives.png) -->
+*Automatic detection and display of all system drives and network locations*
+
+### Theme Variations
+
+#### Light Theme
+<!-- ![Light Theme](docs/screenshots/themes/light-theme-main-interface.png) -->
+
+#### Dark Theme
+<!-- ![Dark Theme](docs/screenshots/themes/dark-theme-main-interface.png) -->
+
+### Platform-Specific Appearance
+
+| Windows | macOS | Linux |
+|---------|-------|-------|
+| <!-- ![Windows](docs/screenshots/platforms/windows-main-interface.png) --> | <!-- ![macOS](docs/screenshots/platforms/macos-main-interface.png) --> | <!-- ![Linux](docs/screenshots/platforms/linux-main-interface.png) --> |
+| *Native Windows 11 styling* | *Native macOS styling* | *Native Linux desktop integration* |
+
+### Visual Documentation
+For complete visual documentation including feature demonstrations, theme comparisons, and platform-specific screenshots, see:
+
+- 📸 **[Screenshots Overview](docs/screenshots/README.md)** - Complete visual documentation guide
+- 🎨 **[Theme Gallery](docs/screenshots/themes/THEME_SCREENSHOTS.md)** - Light and dark theme variations
+- 💻 **[Platform Gallery](docs/screenshots/platforms/PLATFORM_SCREENSHOTS.md)** - Windows, macOS, and Linux appearances
+- ⚡ **[Feature Demos](docs/screenshots/features/SCREENSHOTS_NEEDED.md)** - Core functionality screenshots
+
 ## Technology Stack
 
 - **Python 3.8+ (64-bit)**: Core language with cross-platform compatibility
