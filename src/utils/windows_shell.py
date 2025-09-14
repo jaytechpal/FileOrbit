@@ -994,23 +994,32 @@ class WindowsShellIntegration:
                         "bold": True
                     })
                     
-            # Add Open With submenu for files
-            open_with_programs = self.get_open_with_programs(file_path)
-            if open_with_programs:
-                actions.append({
-                    "text": "Open with",
-                    "icon": "open_with",
-                    "submenu": open_with_programs
-                })
+            # Add Open With submenu for files only
+            if not file_path.is_dir():
+                open_with_programs = self.get_open_with_programs(file_path)
+                if open_with_programs:
+                    actions.append({
+                        "text": "Open with",
+                        "icon": "open_with",
+                        "submenu": open_with_programs
+                    })
                 
             # Add shell extensions right after Open actions (like Windows Explorer)
             # Filter to only show the most relevant ones in top level
             priority_extensions = []
             for ext in all_extensions:
                 text = ext.get("text", "").lower()
+                
                 # Only add high-priority extensions to top level
                 if any(priority_text in text for priority_text in ShellConstants.PRIORITY_APP_PATTERNS):
-                    priority_extensions.append(ext)
+                    # Filter out file-specific applications for directories
+                    if file_path.is_dir():
+                        # For directories, only allow directory-appropriate extensions
+                        if self._is_directory_appropriate_extension(text):
+                            priority_extensions.append(ext)
+                    else:
+                        # For files, allow all priority extensions
+                        priority_extensions.append(ext)
             
             # Add priority extensions
             for ext in priority_extensions:
@@ -1102,7 +1111,18 @@ class WindowsShellIntegration:
                 text = ext.get("text", "").lower()
                 # Skip extensions we already showed at the top
                 if not any(priority_text in text for priority_text in priority_texts):
-                    remaining_extensions.append(ext)
+                    # Also filter based on file vs directory appropriateness
+                    if is_single and file_path:
+                        if file_path.is_dir():
+                            # For directories, only add appropriate extensions
+                            if self._is_directory_appropriate_extension(text):
+                                remaining_extensions.append(ext)
+                        else:
+                            # For files, add all remaining extensions
+                            remaining_extensions.append(ext)
+                    else:
+                        # For multiple selection, be conservative
+                        remaining_extensions.append(ext)
             
             if remaining_extensions:
                 for ext in remaining_extensions:
@@ -1286,6 +1306,53 @@ class WindowsShellIntegration:
         if len(text.strip()) < 2:
             return True
             
+        return False
+    
+    def _is_directory_appropriate_extension(self, text: str) -> bool:
+        """Check if a shell extension is appropriate for directories"""
+        text_lower = text.lower()
+        
+        # Directory-appropriate applications and tools
+        directory_appropriate = [
+            # Version control
+            "git", "svn", "mercurial",
+            # Terminal/command line tools
+            "command prompt", "cmd", "powershell", "terminal", "bash", "shell",
+            # Directories can be opened in code editors as projects
+            "code", "visual studio", "sublime", "atom", "notepad++", "with code", "with sublime",
+            # File managers
+            "explorer", "finder",
+            # Development tools that work with project directories
+            "intellij", "eclipse", "vscode",
+            # Sync and backup tools
+            "onedrive", "dropbox", "google drive",
+            # Archive tools that can compress directories
+            "winrar", "7zip", "winzip",
+        ]
+        
+        # File-specific applications that should NOT appear for directories
+        file_specific = [
+            # Media players (can't play a directory)
+            "vlc", "media player", "mpc", "playlist", "play with",
+            # Image viewers/editors
+            "photoshop", "paint", "gimp", "image viewer",
+            # Document viewers/editors (for specific file types)
+            "acrobat", "word", "excel", "powerpoint",
+            # Video/audio editors
+            "video editor", "audio editor", "premiere",
+        ]
+        
+        # Check if it's a file-specific tool that shouldn't appear for directories
+        for file_app in file_specific:
+            if file_app in text_lower:
+                return False
+        
+        # Check if it's a directory-appropriate tool
+        for dir_app in directory_appropriate:
+            if dir_app in text_lower:
+                return True
+        
+        # Default: be conservative and don't show unknown applications for directories
         return False
     
     def _prioritize_like_windows_explorer(self, actions: List[Dict[str, any]]) -> List[Dict[str, any]]:

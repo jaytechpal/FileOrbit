@@ -3,27 +3,30 @@ Core application module
 Main application class and initialization
 """
 
-from PySide6.QtWidgets import QMainWindow, QApplication
-from PySide6.QtCore import QSettings, QTimer
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtCore import QTimer
 
 from src.ui.main_window import MainWindow
 from src.config.settings import AppConfig
 from src.utils.logger import get_logger
 from src.services.file_service import FileService
 from src.services.theme_service import ThemeService
+from src.services.cross_platform_shell_integration import get_shell_integration
+from src.utils.cross_platform_filesystem import get_cross_platform_fs
+from platform_config import get_platform_config
 
 
 class FileOrbitApplication:
-    """Main application class with 64-bit optimizations"""
+    """Main application class with cross-platform support"""
     
     def __init__(self, platform_config=None):
         self.logger = get_logger(__name__)
         self.config = AppConfig()
-        self.platform_config = platform_config
+        self.platform_config = platform_config or get_platform_config()
         self.main_window = None
         self.file_service = None
         self.theme_service = None
+        self.shell_integration = None
+        self.cross_platform_fs = None
         
         self._initialize_services()
         self._create_main_window()
@@ -33,10 +36,17 @@ class FileOrbitApplication:
         """Initialize application services"""
         self.file_service = FileService()
         self.theme_service = ThemeService()
+        self.shell_integration = get_shell_integration()
+        self.cross_platform_fs = get_cross_platform_fs()
         
         # Apply theme
         theme_name = self.config.get('appearance', 'theme', 'dark')
         self.theme_service.apply_theme(theme_name)
+        
+        # Log platform information
+        self.logger.info(f"Platform: {self.platform_config.platform_name}")
+        self.logger.info(f"Architecture: {self.platform_config.architecture}")
+        self.logger.info(f"Shell integration available: {self.shell_integration.is_shell_integration_available()}")
     
     def _create_main_window(self):
         """Create and setup main window"""

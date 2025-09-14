@@ -2,18 +2,19 @@
 File Service - Core file operations with threading support
 """
 
-import os
 import shutil
 import hashlib
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Callable
+from typing import List, Dict, Any
 from datetime import datetime
 
-from PySide6.QtCore import QObject, QThread, Signal, QMutex, QTimer
+from PySide6.QtCore import QObject, QThread, Signal, QMutex
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 from src.utils.logger import get_logger
+from src.utils.cross_platform_filesystem import get_cross_platform_fs
+from platform_config import get_platform_config
 
 
 class FileOperationWorker(QThread):
@@ -32,6 +33,8 @@ class FileOperationWorker(QThread):
         self.target_path = target_path
         self.options = options or {}
         self.logger = get_logger(__name__)
+        self.fs = get_cross_platform_fs()
+        self.config = get_platform_config()
         self._cancelled = False
         
     def run(self):
@@ -97,8 +100,9 @@ class FileOperationWorker(QThread):
             self.progress.emit(progress)
     
     def _delete_files(self):
-        """Delete files"""
+        """Delete files using cross-platform methods"""
         total_files = len(self.source_paths)
+        use_trash = self.options.get('use_trash', True)
         
         for i, source_path in enumerate(self.source_paths):
             if self._cancelled:
@@ -106,10 +110,25 @@ class FileOperationWorker(QThread):
                 
             self.file_processed.emit(str(source_path))
             
-            if source_path.is_file():
-                source_path.unlink()
-            elif source_path.is_dir():
-                shutil.rmtree(source_path)
+            try:
+                if use_trash:
+                    # Use cross-platform trash functionality
+                    success = self.fs.move_to_trash(str(source_path))
+                    if not success:
+                        # Fallback to permanent deletion
+                        if source_path.is_file():
+                            source_path.unlink()
+                        elif source_path.is_dir():
+                            shutil.rmtree(source_path)
+                else:
+                    # Permanent deletion
+                    if source_path.is_file():
+                        source_path.unlink()
+                    elif source_path.is_dir():
+                        shutil.rmtree(source_path)
+            except Exception as e:
+                self.logger.error(f"Error deleting {source_path}: {e}")
+                raise
             
             progress = int(((i + 1) / total_files) * 100)
             self.progress.emit(progress)
@@ -206,6 +225,8 @@ class FileService(QObject):
     def __init__(self):
         super().__init__()
         self.logger = get_logger(__name__)
+        self.fs = get_cross_platform_fs()
+        self.config = get_platform_config()
         self.active_operations = {}
         self.file_watcher = FileWatcher()
         self.operation_counter = 0
@@ -227,6 +248,11 @@ class FileService(QObject):
     def delete_files(self, source_paths: List[Path], 
                      options: Dict[str, Any] = None) -> str:
         """Start delete operation"""
+        return self._start_operation("delete", source_paths, Path(), options)
+    
+    def move_to_trash(self, source_paths: List[Path]) -> str:
+        """Move files to trash/recycle bin"""
+        options = {'use_trash': True}
         return self._start_operation("delete", source_paths, Path(), options)
     
     def _start_operation(self, operation_type: str, source_paths: List[Path],
@@ -285,17 +311,8 @@ class FileService(QObject):
         try:
             stat = path.stat()
             
-            # Handle permissions cross-platform
-            if os.name == 'nt':  # Windows
-                # Windows doesn't use Unix-style permissions
-                permissions = "---"  # Placeholder
-                # Check if read-only
-                if stat.st_mode & 0o200 == 0:  # No write permission
-                    permissions = "r--"
-                else:
-                    permissions = "rw-"
-            else:  # Unix-like systems (macOS, Linux)
-                permissions = oct(stat.st_mode)[-3:]
+            # Handle permissions cross-platform using platform config
+            permissions_info = self.fs.get_file_permissions(str(path))
             
             return {
                 "name": path.name,
@@ -305,7 +322,10 @@ class FileService(QObject):
                 "created": datetime.fromtimestamp(stat.st_ctime),
                 "is_directory": path.is_dir(),
                 "is_file": path.is_file(),
-                "permissions": permissions,
+                "permissions": permissions_info.get('mode_string', ''),
+                "readable": permissions_info.get('readable', False),
+                "writable": permissions_info.get('writable', False),
+                "executable": permissions_info.get('executable', False),
                 "extension": path.suffix.lower() if path.is_file() else ""
             }
         except (OSError, IOError) as e:

@@ -8,40 +8,10 @@ from PySide6.QtCore import Signal, Qt, QFileInfo
 from PySide6.QtGui import QIcon, QPixmap, QPainter
 from pathlib import Path
 import os
-import shutil
-import sys
 
 from src.utils.logger import get_logger
-
-# Windows-specific imports for drive type detection
-if os.name == 'nt':
-    import ctypes
-    from ctypes import wintypes
-    
-    # Properly define Windows API function signatures for 64-bit compatibility
-    kernel32 = ctypes.windll.kernel32
-    mpr = ctypes.windll.mpr
-    
-    # GetDriveTypeW function signature
-    kernel32.GetDriveTypeW.argtypes = [wintypes.LPCWSTR]
-    kernel32.GetDriveTypeW.restype = wintypes.UINT
-    
-    # WNetGetConnectionW function signature  
-    mpr.WNetGetConnectionW.argtypes = [
-        wintypes.LPCWSTR,  # lpLocalName
-        wintypes.LPWSTR,   # lpRemoteName
-        wintypes.LPDWORD   # lpnLength
-    ]
-    mpr.WNetGetConnectionW.restype = wintypes.DWORD
-    
-    # Windows drive type constants
-    DRIVE_UNKNOWN = 0
-    DRIVE_NO_ROOT_DIR = 1
-    DRIVE_REMOVABLE = 2
-    DRIVE_FIXED = 3
-    DRIVE_REMOTE = 4
-    DRIVE_CDROM = 5
-    DRIVE_RAMDISK = 6
+from src.utils.cross_platform_filesystem import get_cross_platform_fs
+from platform_config import get_platform_config
 
 
 class DriveItemWidget(QWidget):
@@ -129,91 +99,29 @@ class DriveItemWidget(QWidget):
         super().mousePressEvent(event)
     
     def _get_drive_type(self, drive_path):
-        """Get drive type using platform-appropriate methods"""
-        if os.name == 'nt':  # Windows
-            try:
-                # Windows API drive type detection with proper 64-bit types
-                drive_type = kernel32.GetDriveTypeW(drive_path)
-                drive_letter = drive_path[0].upper()
-                
-                # Additional check for network mapped drives with proper buffer handling
-                try:
-                    buffer_size = wintypes.DWORD(256)
-                    buffer = ctypes.create_unicode_buffer(buffer_size.value)
-                    result = mpr.WNetGetConnectionW(
-                        drive_letter + ":", 
-                        buffer, 
-                        ctypes.byref(buffer_size)
-                    )
-                    if result == 0:  # NO_ERROR
-                        return "network"  # It's a mapped network drive
-                except Exception:
-                    pass  # Not a network drive or error occurred
-                
-                # Heuristic for network drives that appear as fixed
-                if drive_type == DRIVE_FIXED and drive_letter >= 'H':
-                    return "network"
-                        
-                if drive_type == DRIVE_FIXED:
-                    return "fixed"  # Hard drive
-                elif drive_type == DRIVE_REMOTE:
-                    return "network"  # Network drive
-                elif drive_type == DRIVE_REMOVABLE:
-                    return "removable"  # USB, floppy, etc.
-                elif drive_type == DRIVE_CDROM:
-                    return "cdrom"  # CD/DVD/Blu-ray
-                elif drive_type == DRIVE_RAMDISK:
-                    return "ramdisk"  # RAM disk
-                else:
-                    return "unknown"
-            except Exception:
-                return "fixed"  # Default fallback
-                
-        elif os.name == 'posix':  # Linux and macOS
-            try:
-                # Check mount points for drive type detection
-                import subprocess
-                
-                # On macOS, check if it's in /Volumes (external/network drives)
-                if sys.platform == 'darwin':  # macOS
-                    if drive_path.startswith('/Volumes/'):
-                        # Try to determine if it's network or removable
-                        try:
-                            result = subprocess.run(['mount'], capture_output=True, text=True)
-                            mount_info = result.stdout
-                            if drive_path in mount_info:
-                                if any(fs_type in mount_info for fs_type in ['nfs', 'smb', 'cifs', 'afp']):
-                                    return "network"
-                                elif any(fs_type in mount_info for fs_type in ['msdos', 'exfat', 'ntfs']):
-                                    return "removable"
-                        except Exception:
-                            pass
-                        return "removable"  # Default for /Volumes
-                    elif drive_path == '/':
-                        return "fixed"  # Root filesystem
-                    else:
-                        return "fixed"  # Other paths
-                        
-                else:  # Linux
-                    if drive_path == '/':
-                        return "fixed"  # Root filesystem
-                    elif drive_path.startswith('/media/') or drive_path.startswith('/mnt/'):
-                        # Check if it's a network mount
-                        try:
-                            result = subprocess.run(['mount'], capture_output=True, text=True)
-                            mount_info = result.stdout
-                            if any(fs_type in mount_info for fs_type in ['nfs', 'smb', 'cifs']):
-                                return "network"
-                        except Exception:
-                            pass
-                        return "removable"  # Likely external drive
-                    else:
-                        return "fixed"  # Default
-                        
-            except Exception:
-                return "fixed"  # Default fallback
-        else:
-            return "fixed"  # Default for unknown OS
+        """Get drive type using cross-platform methods"""
+        # Use the drive info from our cross-platform filesystem
+        if hasattr(self, 'drive_info') and 'type' in self.drive_info:
+            return self.drive_info['type']
+        
+        # Fallback: determine type from path
+        config = get_platform_config()
+        
+        if config.is_windows:
+            if drive_path.endswith(':\\'):
+                return "fixed"  # Default for Windows drives
+        elif config.is_macos:
+            if drive_path == '/':
+                return "fixed"
+            elif drive_path.startswith('/Volumes/'):
+                return "removable"
+        else:  # Linux
+            if drive_path == '/':
+                return "fixed"
+            elif drive_path.startswith(('/media/', '/mnt/')):
+                return "removable"
+        
+        return "fixed"  # Default fallback
 
     def _get_drive_icon(self):
         """Get appropriate icon for drive type using platform-appropriate shell icons"""
@@ -241,11 +149,14 @@ class DriveItemWidget(QWidget):
             try:
                 painter.setRenderHint(QPainter.RenderHint.Antialiasing)
                 
-                # Get drive identifier (letter on Windows, last part of path on Unix)
-                if os.name == 'nt':
-                    drive_identifier = self.drive_info['letter']
+                # Get drive identifier using Path instead of os.path
+                drive_path_obj = Path(drive_path)
+                config = get_platform_config()
+                
+                if config.is_windows:
+                    drive_identifier = self.drive_info.get('letter', drive_path_obj.name)
                 else:
-                    drive_identifier = os.path.basename(drive_path) or '/'
+                    drive_identifier = drive_path_obj.name or '/'
                     if len(drive_identifier) > 2:
                         drive_identifier = drive_identifier[:2]  # Truncate long names
                 
@@ -344,7 +255,7 @@ class SideBar(QWidget):
         """Get appropriate icon for folder type using Windows shell icons when possible"""
         try:
             # Try to get Windows shell icon first if path is provided
-            if folder_path and os.path.exists(folder_path):
+            if folder_path and Path(folder_path).exists():
                 icon_provider = QFileIconProvider()
                 file_info = QFileInfo(folder_path)
                 system_icon = icon_provider.icon(file_info)
@@ -596,140 +507,31 @@ class SideBar(QWidget):
     
     def _get_drives(self):
         """Get available drives/mount points with usage information (cross-platform)"""
-        drives = []
+        fs = get_cross_platform_fs()
+        raw_drives = fs.get_drives()
         
-        if os.name == 'nt':  # Windows
-            import string
-            for letter in string.ascii_uppercase:
-                drive_path = f"{letter}:\\"
-                if os.path.exists(drive_path):
-                    try:
-                        # Get drive usage information
-                        usage = shutil.disk_usage(drive_path)
-                        total_gb = usage.total / (1024**3)
-                        used_gb = (usage.total - usage.free) / (1024**3)
-                        free_gb = usage.free / (1024**3)
-                        
-                        drives.append({
-                            'letter': letter,
-                            'path': drive_path,
-                            'name': f"{letter}:",
-                            'total_gb': total_gb,
-                            'used_gb': used_gb,
-                            'free_gb': free_gb,
-                            'usage_percent': (used_gb / total_gb) * 100 if total_gb > 0 else 0
-                        })
-                    except (OSError, PermissionError):
-                        # Drive exists but can't get usage info (e.g., CD drive)
-                        drives.append({
-                            'letter': letter,
-                            'path': drive_path,
-                            'name': f"{letter}:",
-                            'total_gb': 0,
-                            'used_gb': 0,
-                            'free_gb': 0,
-                            'usage_percent': 0
-                        })
-                        
-        elif sys.platform == 'darwin':  # macOS
-            # Add root filesystem
-            try:
-                usage = shutil.disk_usage('/')
-                total_gb = usage.total / (1024**3)
-                used_gb = (usage.total - usage.free) / (1024**3)
-                free_gb = usage.free / (1024**3)
-                
-                drives.append({
-                    'letter': '/',
-                    'path': '/',
-                    'name': 'Macintosh HD',
-                    'total_gb': total_gb,
-                    'used_gb': used_gb,
-                    'free_gb': free_gb,
-                    'usage_percent': (used_gb / total_gb) * 100 if total_gb > 0 else 0
-                })
-            except (OSError, PermissionError):
-                pass
+        drives = []
+        for drive_info in raw_drives:
+            # Convert from bytes to GB
+            total_gb = drive_info['total_space'] / (1024**3) if drive_info['total_space'] > 0 else 0
+            used_gb = drive_info['used_space'] / (1024**3) if drive_info['used_space'] > 0 else 0
+            free_gb = drive_info['free_space'] / (1024**3) if drive_info['free_space'] > 0 else 0
             
-            # Add mounted volumes in /Volumes
-            volumes_path = Path('/Volumes')
-            if volumes_path.exists():
-                for volume in volumes_path.iterdir():
-                    if volume.is_dir() and volume.name != 'Macintosh HD':
-                        try:
-                            usage = shutil.disk_usage(str(volume))
-                            total_gb = usage.total / (1024**3)
-                            used_gb = (usage.total - usage.free) / (1024**3)
-                            free_gb = usage.free / (1024**3)
-                            
-                            drives.append({
-                                'letter': volume.name[:1].upper(),
-                                'path': str(volume),
-                                'name': volume.name,
-                                'total_gb': total_gb,
-                                'used_gb': used_gb,
-                                'free_gb': free_gb,
-                                'usage_percent': (used_gb / total_gb) * 100 if total_gb > 0 else 0
-                            })
-                        except (OSError, PermissionError):
-                            # Volume not accessible
-                            drives.append({
-                                'letter': volume.name[:1].upper(),
-                                'path': str(volume),
-                                'name': volume.name,
-                                'total_gb': 0,
-                                'used_gb': 0,
-                                'free_gb': 0,
-                                'usage_percent': 0
-                            })
-                            
-        else:  # Linux and other Unix-like
-            # Add root filesystem
-            try:
-                usage = shutil.disk_usage('/')
-                total_gb = usage.total / (1024**3)
-                used_gb = (usage.total - usage.free) / (1024**3)
-                free_gb = usage.free / (1024**3)
-                
-                drives.append({
-                    'letter': '/',
-                    'path': '/',
-                    'name': 'Root',
-                    'total_gb': total_gb,
-                    'used_gb': used_gb,
-                    'free_gb': free_gb,
-                    'usage_percent': (used_gb / total_gb) * 100 if total_gb > 0 else 0
-                })
-            except (OSError, PermissionError):
-                pass
+            # Extract letter for display (first character of label or path)
+            letter = drive_info['label'][:1] if drive_info['label'] else drive_info['path'][:1]
             
-            # Add common mount points
-            mount_points = ['/media', '/mnt', '/home']
-            for mount_base in mount_points:
-                mount_path = Path(mount_base)
-                if mount_path.exists():
-                    for mount in mount_path.iterdir():
-                        if mount.is_dir():
-                            try:
-                                usage = shutil.disk_usage(str(mount))
-                                total_gb = usage.total / (1024**3)
-                                used_gb = (usage.total - usage.free) / (1024**3)
-                                free_gb = usage.free / (1024**3)
-                                
-                                # Skip if it's the same as root filesystem
-                                if mount != Path('/'):
-                                    drives.append({
-                                        'letter': mount.name[:1].upper(),
-                                        'path': str(mount),
-                                        'name': mount.name,
-                                        'total_gb': total_gb,
-                                        'used_gb': used_gb,
-                                        'free_gb': free_gb,
-                                        'usage_percent': (used_gb / total_gb) * 100 if total_gb > 0 else 0
-                                    })
-                            except (OSError, PermissionError):
-                                pass
-                                
+            drives.append({
+                'letter': letter.upper(),
+                'path': drive_info['path'],
+                'name': drive_info['label'] or drive_info['path'],
+                'type': drive_info['type'],
+                'filesystem': drive_info.get('filesystem', 'Unknown'),
+                'total_gb': total_gb,
+                'used_gb': used_gb,
+                'free_gb': free_gb,
+                'usage_percent': drive_info['usage_percent']
+            })
+                    
         return drives
     
     def _on_item_clicked(self, item, column):

@@ -17,9 +17,11 @@ from PySide6.QtCore import Qt, Signal, QTimer, QFileInfo
 from PySide6.QtGui import QIcon, QAction
 
 from src.utils.logger import get_logger
-from src.utils.windows_shell import WindowsShellIntegration
-from src.config.constants import UIConstants, IconConstants, FilterConstants
-from src.utils.error_handling import IconExtractionError, handle_icon_operation, safe_execute
+from src.services.cross_platform_shell_integration import get_shell_integration
+from src.utils.cross_platform_filesystem import get_cross_platform_fs
+from platform_config import get_platform_config
+from src.config.constants import UIConstants, IconConstants
+
 
 
 class ActivatableTabWidget(QTabWidget):
@@ -121,8 +123,10 @@ class FilePanel(QWidget):
         self.config = config
         self.logger = get_logger(__name__)
         
-        # Windows shell integration
-        self.shell_integration = WindowsShellIntegration()
+        # Cross-platform services
+        self.shell_integration = get_shell_integration()
+        self.fs = get_cross_platform_fs()
+        self.platform_config = get_platform_config()
         
         # Current state
         self.current_path = Path.home()
@@ -570,8 +574,9 @@ class FilePanel(QWidget):
         # Get selected file paths
         selected_paths = [Path(item.data(Qt.UserRole)) for item in selected_items]
         
-        # Get Windows Explorer-style actions
-        actions = self.shell_integration.get_context_menu_actions(selected_paths)
+        # Get Windows Explorer-style actions (use first selected file for menu items)
+        primary_path = str(selected_paths[0]) if selected_paths else ""
+        actions = self.shell_integration.get_context_menu_items(primary_path)
         
         # Create menu
         menu = self._create_context_menu(actions)
@@ -698,27 +703,27 @@ class FilePanel(QWidget):
         
         # Fallback to our enhanced icon mapping with distinctive icons
         icon_map = {
-            # Standard file operations
+            # Standard file operations (Windows Explorer style)
             "folder_open": QStyle.SP_DirOpenIcon,
             "file_open": QStyle.SP_FileIcon,
-            "tab_new": QStyle.SP_FileDialogNewFolder,
+            "tab_new": QStyle.SP_FileDialogNewFolder,  # Tab icon
             "open_with": QStyle.SP_ComputerIcon,
             "send_to": QStyle.SP_DriveHDIcon,
             
-            # Edit operations with more distinctive icons
-            "cut": QStyle.SP_DialogDiscardButton,
-            "copy": QStyle.SP_DialogSaveButton,
-            "paste": QStyle.SP_DialogOkButton,
+            # Edit operations (Windows Explorer style)
+            "cut": QStyle.SP_DialogDiscardButton,  # Scissors-like icon
+            "copy": QStyle.SP_DialogSaveButton,    # Copy document icon
+            "paste": QStyle.SP_DialogOkButton,     # Paste/OK icon
             "paste_shortcut": QStyle.SP_ArrowRight,
             "shortcut": QStyle.SP_ArrowRight,
-            "delete": QStyle.SP_TrashIcon,  # Proper delete icon
+            "delete": QStyle.SP_TrashIcon,         # Proper delete/trash icon
             "rename": QStyle.SP_FileDialogDetailedView,
             
             # View and navigation
-            "properties": QStyle.SP_ComputerIcon,
+            "properties": QStyle.SP_ComputerIcon,  # Properties dialog icon
             "view": QStyle.SP_FileDialogListView,
             "sort": QStyle.SP_ArrowUp,
-            "refresh": QStyle.SP_BrowserReload,
+            "refresh": QStyle.SP_BrowserReload,    # Refresh icon
             "new": QStyle.SP_FileDialogNewFolder,
             
             # File types
@@ -727,22 +732,24 @@ class FilePanel(QWidget):
             "image": QStyle.SP_FileIcon,
             "rtf": QStyle.SP_FileIcon,
             
-            # System and applications with more distinctive icons
-            "display": QStyle.SP_ComputerIcon,
-            "personalize": QStyle.SP_ComputerIcon,
+            # Application-specific icons (matching Windows context menu)
+            "vlc": QStyle.SP_MediaPlay,            # VLC - orange cone (play icon)
+            "mpc": QStyle.SP_MediaVolume,          # MPC-HC - media player
+            "git": QStyle.SP_DriveNetIcon,         # Git - version control
+            "find": QStyle.SP_FileDialogDetailedView,  # Find/search
+            "search": QStyle.SP_FileDialogDetailedView,
+            "media": QStyle.SP_MediaPlay,
+            "code": QStyle.SP_CommandLink,         # VS Code - code editor
+            "editor": QStyle.SP_DialogSaveButton, # Text editors (Sublime, Notepad++)
+            "terminal": QStyle.SP_MessageBoxCritical,  # Terminal/console
+            "cmd": QStyle.SP_MessageBoxInformation,    # Command Prompt
+            "powershell": QStyle.SP_DialogApplyButton, # PowerShell (blue icon style)
+            "bash": QStyle.SP_MessageBoxCritical,      # Git Bash/Bash terminal
             
-            # Third-party applications - using more distinctive system icons
-            "vlc": QStyle.SP_MediaPlay,  # VLC - media play icon (triangle)
-            "mpc": QStyle.SP_MediaVolume,  # MPC-HC - volume/media icon
-            "git": QStyle.SP_DriveNetIcon,  # Git - network drive icon
-            "find": QStyle.SP_FileDialogDetailedView,  # Find - magnifying glass style
-            "search": QStyle.SP_FileDialogDetailedView,  # Search icon
-            "media": QStyle.SP_MediaPlay,  # Media players - play button
-            "code": QStyle.SP_CommandLink,  # Code editors - distinctive link icon  
-            "editor": QStyle.SP_DialogSaveButton,  # Text editors - save/document icon
-            "terminal": QStyle.SP_MessageBoxCritical,  # Terminal - warning/system icon
-            "cmd": QStyle.SP_MessageBoxInformation,  # Command prompt - info icon
-            "powershell": QStyle.SP_DialogApplyButton,  # PowerShell - apply/action icon (more distinctive)
+            # Additional Windows Explorer icons
+            "create": QStyle.SP_FileDialogNewFolder,   # Create shortcut
+            "add": QStyle.SP_DialogOkButton,           # Add to playlist/library
+            "playlist": QStyle.SP_MediaVolume,         # Media playlists
             
             # Generic third-party app fallback
             "app_extension": QStyle.SP_DialogApplyButton,  # More distinctive than computer icon
@@ -767,22 +774,25 @@ class FilePanel(QWidget):
 
     def _get_system_application_icon(self, icon_name: str) -> QIcon:
         """Get actual application icon from Windows system"""
-        import os
-        
         try:
             self.logger.debug(f"Attempting to get system icon for: {icon_name}")
             
             # First try direct application lookup for common applications
-            app_paths = self._get_common_app_paths()
+            if self.platform_config.is_windows:
+                app_paths_dict = self._get_windows_app_paths_dict()
+            elif self.platform_config.is_macos:
+                app_paths_dict = self._get_macos_app_paths_dict()
+            else:
+                app_paths_dict = self._get_linux_app_paths_dict()
             
             # Match icon name to application path with better matching
-            for app_name, app_path in app_paths.items():
+            for app_name, app_path in app_paths_dict.items():
                 if (icon_name.lower() == app_name.lower() or 
                     icon_name.lower() in app_name.lower() or 
                     app_name.lower() in icon_name.lower()):
                     
                     self.logger.debug(f"Found matching app: {app_name} -> {app_path}")
-                    if os.path.exists(app_path):
+                    if Path(app_path).exists():
                         icon = self._get_exe_icon(app_path)
                         if icon and not icon.isNull():
                             self.logger.debug(f"Successfully extracted {icon_name} icon from {app_path}")
@@ -825,7 +835,7 @@ class FilePanel(QWidget):
                             # Fallback to executable icon extraction
                             exe_path = self._extract_exe_path_from_command(command)
                             self.logger.debug(f"Matched {icon_name} by text: exe_path='{exe_path}'")
-                            if exe_path and os.path.exists(exe_path):
+                            if exe_path and Path(exe_path).exists():
                                 icon = self._get_exe_icon(exe_path)
                                 if icon and not icon.isNull():
                                     self.logger.debug(f"Successfully extracted {icon_name} icon from {exe_path}")
@@ -841,7 +851,7 @@ class FilePanel(QWidget):
                                ("sublime" in command.lower() and icon_name == "sublime"):
                                 exe_path = self._extract_exe_path_from_command(command)
                                 self.logger.debug(f"Matched {icon_name} by command: exe_path='{exe_path}'")
-                                if exe_path and os.path.exists(exe_path):
+                                if exe_path and Path(exe_path).exists():
                                     icon = self._get_exe_icon(exe_path)
                                     if icon and not icon.isNull():
                                         self.logger.debug(f"Successfully extracted {icon_name} icon from command {exe_path}")
@@ -853,7 +863,7 @@ class FilePanel(QWidget):
             # Fallback: Try common application paths
             app_paths = self._get_common_app_paths(icon_name)
             for app_path in app_paths:
-                if os.path.exists(app_path):
+                if Path(app_path).exists():
                     icon = self._get_exe_icon(app_path)
                     if icon and not icon.isNull():
                         return icon
@@ -888,8 +898,6 @@ class FilePanel(QWidget):
 
     def _get_icon_from_path(self, icon_path: str) -> QIcon:
         """Extract icon from registry icon path (e.g., 'path.exe,0')"""
-        import os
-        
         if not icon_path:
             return QIcon()
         
@@ -903,23 +911,35 @@ class FilePanel(QWidget):
                 exe_path = icon_path.strip().strip('"')
                 icon_index = 0
             
-            # Check if executable exists
-            if os.path.exists(exe_path):
-                # Try to extract icon using Windows API with icon index
-                icon = self._get_exe_icon_with_index(exe_path, icon_index)
+            # Check if executable exists using pathlib
+            exe_file = Path(exe_path)
+            if exe_file.exists():
+                # Try to extract icon using cross-platform approach
+                icon = self._get_exe_icon_cross_platform(str(exe_file), icon_index)
                 if icon and not icon.isNull():
                     return icon
-                
-                # Fallback to regular exe icon extraction
-                return self._get_exe_icon(exe_path)
                 
         except Exception as e:
             self.logger.debug(f"Error extracting icon from path {icon_path}: {e}")
         
         return QIcon()
 
-    def _get_exe_icon_with_index(self, exe_path: str, icon_index: int = 0) -> QIcon:
-        """Extract specific icon from executable by index"""
+    def _get_exe_icon_cross_platform(self, exe_path: str, icon_index: int = 0) -> QIcon:
+        """Extract icon from executable using cross-platform approach"""
+        try:
+            if self.platform_config.is_windows:
+                return self._get_exe_icon_windows(exe_path, icon_index)
+            elif self.platform_config.is_macos:
+                return self._get_exe_icon_macos(exe_path)
+            else:  # Linux
+                return self._get_exe_icon_linux(exe_path)
+                
+        except Exception as e:
+            self.logger.debug(f"Error extracting cross-platform icon from {exe_path}: {e}")
+            return QIcon()
+    
+    def _get_exe_icon_windows(self, exe_path: str, icon_index: int = 0) -> QIcon:
+        """Extract icon from Windows executable"""
         try:
             # Use Windows shell32 API to extract icon by index
             import ctypes
@@ -964,66 +984,146 @@ class FilePanel(QWidget):
                     return icon
                     
         except Exception as e:
-            self.logger.debug(f"Failed to extract icon with index from {exe_path}: {e}")
+            self.logger.debug(f"Error extracting Windows icon from {exe_path}: {e}")
+        
+        return QIcon()
+    
+    def _get_exe_icon_macos(self, exe_path: str) -> QIcon:
+        """Extract icon from macOS application bundle"""
+        try:
+            exe_file = Path(exe_path)
             
+            # If it's an app bundle, look for icon in Contents/Resources
+            if exe_file.suffix == '.app':
+                icon_dir = exe_file / 'Contents' / 'Resources'
+                if icon_dir.exists():
+                    # Look for common icon files
+                    for icon_name in ['AppIcon.icns', 'icon.icns', 'app.icns']:
+                        icon_file = icon_dir / icon_name
+                        if icon_file.exists():
+                            return QIcon(str(icon_file))
+                    
+                    # Look for any .icns file
+                    for icon_file in icon_dir.glob('*.icns'):
+                        return QIcon(str(icon_file))
+            
+            # Use Qt's built-in icon provider as fallback
+            file_info = QFileInfo(exe_path)
+            icon_provider = QFileIconProvider()
+            return icon_provider.icon(file_info)
+            
+        except Exception as e:
+            self.logger.debug(f"Error extracting macOS icon from {exe_path}: {e}")
+        
+        return QIcon()
+    
+    def _get_exe_icon_linux(self, exe_path: str) -> QIcon:
+        """Extract icon from Linux executable using desktop files"""
+        try:
+            exe_file = Path(exe_path)
+            exe_name = exe_file.stem.lower()
+            
+            # Look for corresponding desktop file
+            desktop_dirs = [
+                Path('/usr/share/applications'),
+                Path.home() / '.local' / 'share' / 'applications'
+            ]
+            
+            for desktop_dir in desktop_dirs:
+                if not desktop_dir.exists():
+                    continue
+                    
+                # Look for desktop file with same name
+                desktop_file = desktop_dir / f"{exe_name}.desktop"
+                if desktop_file.exists():
+                    icon_name = self._extract_icon_from_desktop_file(desktop_file)
+                    if icon_name:
+                        # Try to find icon in system icon themes
+                        icon = self._find_system_icon_linux(icon_name)
+                        if not icon.isNull():
+                            return icon
+            
+            # Use Qt's built-in icon provider as fallback
+            file_info = QFileInfo(exe_path)
+            icon_provider = QFileIconProvider()
+            return icon_provider.icon(file_info)
+            
+        except Exception as e:
+            self.logger.debug(f"Error extracting Linux icon from {exe_path}: {e}")
+        
+        return QIcon()
+    
+    def _extract_icon_from_desktop_file(self, desktop_file: Path) -> str:
+        """Extract icon name from desktop file"""
+        try:
+            content = desktop_file.read_text()
+            for line in content.split('\n'):
+                if line.startswith('Icon='):
+                    return line.split('=', 1)[1].strip()
+        except Exception:
+            pass
+        return ""
+    
+    def _find_system_icon_linux(self, icon_name: str) -> QIcon:
+        """Find icon in Linux system icon directories"""
+        try:
+            # Common icon directories
+            icon_dirs = [
+                '/usr/share/icons',
+                '/usr/share/pixmaps',
+                str(Path.home() / '.local' / 'share' / 'icons')
+            ]
+            
+            # Common icon themes
+            themes = ['hicolor', 'default', 'gnome', 'Adwaita']
+            sizes = ['48x48', '32x32', '24x24', '16x16', 'scalable']
+            
+            for icon_dir in icon_dirs:
+                icon_path = Path(icon_dir)
+                if not icon_path.exists():
+                    continue
+                
+                for theme in themes:
+                    theme_path = icon_path / theme
+                    if not theme_path.exists():
+                        continue
+                    
+                    for size in sizes:
+                        size_path = theme_path / size / 'apps'
+                        if size_path.exists():
+                            # Look for icon files
+                            for ext in ['.png', '.svg', '.xpm']:
+                                icon_file = size_path / f"{icon_name}{ext}"
+                                if icon_file.exists():
+                                    return QIcon(str(icon_file))
+                
+                # Also check directly in pixmaps
+                pixmap_file = icon_path / f"{icon_name}.png"
+                if pixmap_file.exists():
+                    return QIcon(str(pixmap_file))
+                    
+        except Exception:
+            pass
+        
         return QIcon()
 
     def _get_exe_icon(self, exe_path: str) -> QIcon:
-        """Extract icon from executable file using Windows API"""
-        import os
+        """Extract icon from executable file using cross-platform approach"""
         try:
-            # Try using Qt's QFileIconProvider first
+            # Try using Qt's QFileIconProvider first (works on all platforms)
             from PySide6.QtWidgets import QFileIconProvider
             from PySide6.QtCore import QFileInfo
             
-            if os.path.exists(exe_path):
+            exe_file = Path(exe_path)
+            if exe_file.exists():
                 provider = QFileIconProvider()
-                file_info = QFileInfo(exe_path)
+                file_info = QFileInfo(str(exe_file))
                 icon = provider.icon(file_info)
                 if not icon.isNull():
                     return icon
                     
-            # Fallback: Try to use Windows shell32 API through Python
-            import ctypes
-            from ctypes import wintypes
-            
-            # Load shell32.dll
-            shell32 = ctypes.windll.shell32
-            
-            # Get icon handle
-            SHGFI_ICON = IconConstants.SHGFI_ICON
-            SHGFI_LARGEICON = IconConstants.SHGFI_LARGEICON
-            
-            class SHFILEINFO(ctypes.Structure):
-                _fields_ = [
-                    ("hIcon", wintypes.HANDLE),
-                    ("iIcon", ctypes.c_int),
-                    ("dwAttributes", wintypes.DWORD),
-                    ("szDisplayName", ctypes.c_wchar * 260),
-                    ("szTypeName", ctypes.c_wchar * 80)
-                ]
-            
-            shfileinfo = SHFILEINFO()
-            
-            # Get file icon
-            ret = shell32.SHGetFileInfoW(
-                exe_path,
-                0,
-                ctypes.byref(shfileinfo),
-                ctypes.sizeof(shfileinfo),
-                SHGFI_ICON | SHGFI_LARGEICON
-            )
-            
-            if ret:
-                # Convert to QIcon using Qt's fromWinHICON
-                from PySide6.QtGui import QIcon
-                icon = QIcon.fromWinHICON(shfileinfo.hIcon)
-                
-                # Clean up the icon handle
-                ctypes.windll.user32.DestroyIcon(shfileinfo.hIcon)
-                
-                if not icon.isNull():
-                    return icon
+            # Use the cross-platform icon extraction
+            return self._get_exe_icon_cross_platform(exe_path)
                     
         except Exception as e:
             self.logger.debug(f"Failed to extract icon from {exe_path}: {e}")
@@ -1076,53 +1176,6 @@ class FilePanel(QWidget):
         
         return False
 
-    def _get_common_app_paths(self, icon_name: str) -> list:
-        """Get common installation paths for applications"""
-        import os
-        paths = []
-        
-        username = os.environ.get('USERNAME', '')
-        
-        if icon_name == "vlc":
-            paths.extend([
-                r"C:\Program Files\VideoLAN\VLC\vlc.exe",
-                r"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe"
-            ])
-        elif icon_name == "git":
-            paths.extend([
-                r"C:\Program Files\Git\cmd\git-gui.exe",
-                r"C:\Program Files\Git\git-bash.exe"
-            ])
-        elif icon_name == "code":
-            paths.extend([
-                rf"C:\Users\{username}\AppData\Local\Programs\Microsoft VS Code\Code.exe",
-                r"C:\Program Files\Microsoft VS Code\Code.exe",
-                r"C:\Program Files (x86)\Microsoft VS Code\Code.exe"
-            ])
-        elif icon_name == "editor":
-            paths.extend([
-                r"C:\Program Files\Sublime Text\sublime_text.exe",
-                r"C:\Program Files (x86)\Sublime Text\sublime_text.exe"
-            ])
-        elif icon_name == "cmd":
-            paths.append(r"C:\Windows\System32\cmd.exe")
-        elif icon_name == "mpc":
-            paths.extend([
-                r"C:\Program Files\MPC-HC\mpc-hc64.exe",
-                r"C:\Program Files (x86)\MPC-HC\mpc-hc.exe",
-                r"C:\Program Files\K-Lite Codec Pack\MPC-HC64\mpc-hc64.exe",
-                r"C:\Program Files (x86)\K-Lite Codec Pack\MPC-HC\mpc-hc.exe",
-                r"C:\Program Files\MPC-HC\mpc-hc.exe",
-                rf"C:\Users\{username}\AppData\Local\Programs\MPC-HC\mpc-hc.exe"
-            ])
-        elif icon_name == "powershell":
-            paths.extend([
-                r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
-                r"C:\Program Files\PowerShell\7\pwsh.exe"
-            ])
-        
-        return paths
-    
     def _get_icon_from_text(self, text: str) -> str:
         """Get appropriate icon name based on action text"""
         if not text:
@@ -1130,49 +1183,69 @@ class FilePanel(QWidget):
         
         text_lower = text.lower()
         
-        # VLC media player
-        if "vlc" in text_lower or "media player" in text_lower:
-            return "vlc"
+        # Core file operations
+        if "open in new tab" in text_lower:
+            return "tab_new"
+        elif text_lower == "open":
+            return "folder_open" if "folder" in text_lower else "file_open"
+        elif "cut" in text_lower:
+            return "cut"
+        elif "copy" in text_lower:
+            return "copy" 
+        elif "paste" in text_lower:
+            return "paste"
+        elif "delete" in text_lower or "remove" in text_lower:
+            return "delete"
+        elif "rename" in text_lower:
+            return "rename"
+        elif "properties" in text_lower:
+            return "properties"
+        elif "create shortcut" in text_lower or "shortcut" in text_lower:
+            return "create"
+        elif "refresh" in text_lower:
+            return "refresh"
         
-        # MPC-HC media player
-        if "mpc-hc" in text_lower or "mpc" in text_lower or "media player classic" in text_lower:
-            return "mpc"
-        
-        # Git operations
-        if "git" in text_lower:
+        # Git operations (matching Windows context menu)
+        elif "git gui" in text_lower:
+            return "git"
+        elif "git bash" in text_lower or "bash" in text_lower:
+            return "bash"
+        elif "git" in text_lower:
             return "git"
         
-        # Find/Search operations
-        if "find" in text_lower or "search" in text_lower:
-            return "find"
-        
-        # Delete operations
-        if "delete" in text_lower or "remove" in text_lower:
-            return "delete"
-        
-        # Code editors
-        if "code" in text_lower or "visual studio" in text_lower:
+        # Development tools
+        elif "code" in text_lower or "visual studio" in text_lower:
             return "code"
-        
-        # Sublime Text specifically
-        if "sublime" in text_lower:
+        elif "sublime" in text_lower:
             return "editor"
         
-        # Command Prompt specifically  
-        if "command prompt" in text_lower or "cmd" in text_lower:
-            return "cmd"
-        
-        # PowerShell specifically
-        if "powershell" in text_lower:
+        # Terminal/Command operations
+        elif "powershell" in text_lower:
             return "powershell"
-        
-        # Text editors
-        if "notepad" in text_lower or "editor" in text_lower:
-            return "editor"
-        
-        # Terminal/Command line
-        if "command" in text_lower or "powershell" in text_lower or "bash" in text_lower:
+        elif "command prompt" in text_lower or text_lower == "cmd":
+            return "cmd"
+        elif "terminal" in text_lower:
             return "terminal"
+        
+        # Media applications
+        elif "vlc" in text_lower or "media player" in text_lower:
+            return "vlc"
+        elif "mpc-hc" in text_lower or "mpc" in text_lower or "media player classic" in text_lower:
+            return "mpc"
+        elif "add to vlc" in text_lower or "playlist" in text_lower:
+            return "playlist"
+        
+        # Search and utilities
+        elif "find" in text_lower or "search" in text_lower:
+            return "find"
+        elif "send to" in text_lower:
+            return "send_to"
+        elif "open with" in text_lower:
+            return "open_with"
+        
+        # Text editors and documents  
+        elif "notepad" in text_lower or "editor" in text_lower:
+            return "editor"
         
         # Media applications
         if "mpc-hc" in text_lower or "mpc hc" in text_lower:
@@ -1919,10 +1992,21 @@ Total Size: {self._format_file_size(total_size)}"""
         self.panel_activated.emit(self.panel_id)
         super().mousePressEvent(event)
     
-    def _get_common_app_paths(self) -> Dict[str, str]:
-        """Get paths to common applications for icon extraction"""
-        import os
+    def _get_common_app_paths(self, icon_name: str = None) -> List[str]:
+        """Get common application paths for cross-platform compatibility"""
+        if self.platform_config.is_windows:
+            paths_dict = self._get_windows_app_paths_dict()
+        elif self.platform_config.is_macos:
+            paths_dict = self._get_macos_app_paths_dict()
+        else:  # Linux
+            paths_dict = self._get_linux_app_paths_dict()
         
+        if icon_name:
+            return [paths_dict.get(icon_name, "")]
+        return list(paths_dict.values())
+    
+    def _get_windows_app_paths_dict(self) -> Dict[str, str]:
+        """Get Windows-specific app paths"""
         app_paths = {}
         
         # VLC Media Player
@@ -1931,7 +2015,7 @@ Total Size: {self._format_file_size(total_size)}"""
             r"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe",
         ]
         for path in vlc_paths:
-            if os.path.exists(path):
+            if Path(path).exists():
                 app_paths["vlc"] = path
                 break
         
@@ -1941,7 +2025,7 @@ Total Size: {self._format_file_size(total_size)}"""
             r"C:\Program Files (x86)\Git\cmd\git-gui.exe",
         ]
         for path in git_paths:
-            if os.path.exists(path):
+            if Path(path).exists():
                 app_paths["git"] = path
                 break
                 
@@ -1951,7 +2035,7 @@ Total Size: {self._format_file_size(total_size)}"""
             r"C:\Program Files (x86)\MPC-HC\mpc-hc.exe",
         ]
         for path in mpc_paths:
-            if os.path.exists(path):
+            if Path(path).exists():
                 app_paths["mpc"] = path
                 app_paths["mpc-hc"] = path  # Also map to full name
                 app_paths["media"] = path   # Also map to media for fallback
@@ -1961,10 +2045,10 @@ Total Size: {self._format_file_size(total_size)}"""
         code_paths = [
             r"C:\Program Files\Microsoft VS Code\Code.exe",
             r"C:\Program Files (x86)\Microsoft VS Code\Code.exe",
-            r"C:\Users\{}\AppData\Local\Programs\Microsoft VS Code\Code.exe".format(os.environ.get('USERNAME', '')),
+            str(Path.home() / "AppData" / "Local" / "Programs" / "Microsoft VS Code" / "Code.exe"),
         ]
         for path in code_paths:
-            if os.path.exists(path):
+            if Path(path).exists():
                 app_paths["code"] = path
                 break
         
@@ -1974,7 +2058,7 @@ Total Size: {self._format_file_size(total_size)}"""
             r"C:\Program Files (x86)\Sublime Text\sublime_text.exe",
         ]
         for path in sublime_paths:
-            if os.path.exists(path):
+            if Path(path).exists():
                 app_paths["sublime"] = path
                 app_paths["editor"] = path  # Also map to "editor"
                 break
@@ -1986,8 +2070,56 @@ Total Size: {self._format_file_size(total_size)}"""
             r"C:\Program Files (x86)\PowerShell\7\pwsh.exe",
         ]
         for path in powershell_paths:
-            if os.path.exists(path):
+            if Path(path).exists():
                 app_paths["powershell"] = path
                 break
+        
+        return app_paths
+    
+    def _get_macos_app_paths_dict(self) -> Dict[str, str]:
+        """Get macOS-specific app paths"""
+        app_paths = {}
+        
+        # Common macOS application paths
+        apps_dir = Path("/Applications")
+        
+        app_list = [
+            ("vlc", "VLC.app"),
+            ("git", "GitHub Desktop.app"),
+            ("code", "Visual Studio Code.app"),
+            ("sublime", "Sublime Text.app"),
+            ("mpc", "IINA.app"),
+            ("media", "IINA.app"),
+        ]
+        
+        for app_key, app_name in app_list:
+            app_path = apps_dir / app_name
+            if app_path.exists():
+                app_paths[app_key] = str(app_path)
+        
+        return app_paths
+    
+    def _get_linux_app_paths_dict(self) -> Dict[str, str]:
+        """Get Linux-specific app paths"""
+        app_paths = {}
+        
+        # Common Linux executable paths
+        common_paths = ["/usr/bin", "/usr/local/bin", "/opt", "/snap/bin"]
+        
+        app_mapping = [
+            ("vlc", "vlc"),
+            ("git", "git"),
+            ("code", "code"),
+            ("sublime", "subl"),
+            ("mpc", "mpv"),
+            ("media", "vlc"),
+        ]
+        
+        for app_key, app_name in app_mapping:
+            for base_path in common_paths:
+                app_path = Path(base_path) / app_name
+                if app_path.exists() and app_path.is_file():
+                    app_paths[app_key] = str(app_path)
+                    break
         
         return app_paths
