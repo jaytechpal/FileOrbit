@@ -303,6 +303,20 @@ class WindowsShellIntegration:
             universal_extensions = self._get_universal_shell_extensions()
             extensions.extend(universal_extensions[:3])
             
+            # Remove duplicates based on text (keep first occurrence)
+            seen_texts = set()
+            unique_extensions = []
+            for ext_item in extensions:
+                text = ext_item.get("text", "").strip()
+                # Skip if we've seen this exact text before
+                if text and text not in seen_texts:
+                    seen_texts.add(text)
+                    unique_extensions.append(ext_item)
+                elif not text:  # Keep items without text
+                    unique_extensions.append(ext_item)
+            
+            extensions = unique_extensions
+            
             # Cache the result
             self._shell_extensions_cache[cache_key] = extensions
             
@@ -411,6 +425,11 @@ class WindowsShellIntegration:
                     # Use command name as fallback
                     display_name = cmd_name.replace("_", " ").title()
             
+            # Filter out system resource references
+            if self._is_system_resource_reference(display_name):
+                # Try to resolve or skip if it's a system reference
+                display_name = self._resolve_system_resource(display_name) or cmd_name.replace("_", " ").title()
+            
             # Get command executable
             command = None
             try:
@@ -428,11 +447,15 @@ class WindowsShellIntegration:
                 with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, cmd_path) as cmd_key:
                     icon, _ = winreg.QueryValueEx(cmd_key, "Icon")
             except Exception:
-                pass
-                pass
+                # If no icon in command key, try to extract from executable
+                if command:
+                    exe_path = self._extract_exe_path_from_command(command)
+                    if exe_path and os.path.exists(exe_path):
+                        icon = f"{exe_path},0"  # Default icon index
             
             return {
                 "name": display_name,
+                "text": display_name,  # Add text field for consistency
                 "command": command,
                 "registry_key": cmd_name,
                 "icon": icon,
@@ -790,6 +813,7 @@ class WindowsShellIntegration:
             if self._is_application_available(app):
                 common_apps.append({
                     "name": app["name"],
+                    "text": app["name"],  # Add text field for consistency
                     "command": app["command"],
                     "registry_key": f"common_{app['executable']}",
                     "icon": app["icon"],
@@ -876,6 +900,67 @@ class WindowsShellIntegration:
         # Combine all extensions
         all_extensions = shell_extensions + specialized_extensions + common_extensions
         
+        # Advanced deduplication - handle text variations and normalize
+        seen_items = set()
+        unique_extensions = []
+        
+        for ext in all_extensions:
+            text = ext.get("text", "").strip()
+            command = ext.get("command", "").strip()
+            
+            if not text:  # Skip items without text
+                continue
+            
+            # Filter out unwanted entries that don't appear in Windows Explorer
+            if self._should_filter_out_entry(text, command):
+                continue
+                
+            # Normalize text for comparison (remove &, extra spaces, case)
+            normalized_text = text.replace("&", "").replace("  ", " ").strip().lower()
+            
+            # Create multiple comparison keys for better duplicate detection
+            keys_to_check = [
+                normalized_text,  # Basic normalized text
+                normalized_text.replace("with ", ""),  # Remove "with"
+                normalized_text.replace("open ", ""),  # Remove "open"
+                normalized_text.replace("visual studio ", ""),  # Handle VS Code variations
+            ]
+            
+            # Special handling for common variations
+            if "visual studio code" in normalized_text or "code" in normalized_text:
+                keys_to_check.extend([
+                    "code",
+                    "visual studio code",
+                    "open with code",
+                    "open with visual studio code"
+                ])
+            
+            # Check if any of the keys have been seen
+            is_duplicate = False
+            for key in keys_to_check:
+                if key in seen_items:
+                    is_duplicate = True
+                    break
+            
+            # Also check for command-based duplicates (same executable)
+            if command:
+                exe_path = self._extract_exe_path_from_command(command)
+                if exe_path:
+                    exe_key = f"exe:{exe_path.lower()}"
+                    if exe_key in seen_items:
+                        is_duplicate = True
+                    else:
+                        seen_items.add(exe_key)
+            
+            if not is_duplicate:
+                # Add all normalized keys to seen set
+                for key in keys_to_check:
+                    if key:  # Only add non-empty keys
+                        seen_items.add(key)
+                unique_extensions.append(ext)
+        
+        all_extensions = unique_extensions
+        
         # Open actions (single file/folder only)
         if is_single:
             if file_path.is_dir():
@@ -906,22 +991,50 @@ class WindowsShellIntegration:
                         "action": "open_default",
                         "bold": True
                     })
-                actions.append({
-                    "text": "Open in new tab",
-                    "icon": "tab_new",
-                    "action": "open_new_tab"
-                })
-            
-            # Open with submenu
+                    
+            # Add Open With submenu for files
             open_with_programs = self.get_open_with_programs(file_path)
             if open_with_programs:
                 actions.append({
                     "text": "Open with",
                     "icon": "open_with",
-                    "submenu": open_with_programs,
-                    "action": "open_with_submenu"
+                    "submenu": open_with_programs
                 })
+                
+            # Add shell extensions right after Open actions (like Windows Explorer)
+            # Filter to only show the most relevant ones in top level
+            priority_extensions = []
+            for ext in all_extensions:
+                text = ext.get("text", "").lower()
+                # Only add high-priority extensions to top level
+                if any(priority_text in text for priority_text in [
+                    "git gui", "git bash", "open with code", "open with sublime", 
+                    "open powershell", "cmd", "command prompt"
+                ]):
+                    priority_extensions.append(ext)
             
+            # Add priority extensions
+            for ext in priority_extensions:
+                action_def = {
+                    "text": ext.get("text", ext.get("name", "Unknown")),
+                    "action": ext.get("action", "shell_extension"),
+                    "command": ext.get("command", "")
+                }
+                
+                # Only set icon for certain applications, let others be auto-detected
+                text_lower = ext.get("text", "").lower()
+                if "git" in text_lower:
+                    action_def["icon"] = "git"
+                elif "vlc" in text_lower:
+                    action_def["icon"] = "vlc"
+                elif "mpc" in text_lower:
+                    action_def["icon"] = "mpc"
+                # For Sublime and PowerShell, don't set icon - let file panel guess
+                # This ensures they use the working icon resolution path
+                
+                actions.append(action_def)
+                    
+            # Add separator
             actions.append({"separator": True})
         
         # Send to (Windows specific)
@@ -981,16 +1094,27 @@ class WindowsShellIntegration:
         
         actions.append({"separator": True})
         
-        # Add shell extensions from installed applications
+        # Add shell extensions from installed applications (exclude priority ones already shown)
         if all_extensions:
+            priority_texts = ["git gui", "git bash", "open with code", "open with sublime", 
+                            "open powershell", "cmd", "command prompt"]
+            
+            remaining_extensions = []
             for ext in all_extensions:
-                actions.append({
-                    "text": ext["name"],
-                    "icon": "app_extension",
-                    "action": ext["action"],
-                    "command": ext["command"]
-                })
-            actions.append({"separator": True})
+                text = ext.get("text", "").lower()
+                # Skip extensions we already showed at the top
+                if not any(priority_text in text for priority_text in priority_texts):
+                    remaining_extensions.append(ext)
+            
+            if remaining_extensions:
+                for ext in remaining_extensions:
+                    actions.append({
+                        "text": ext.get("text", ext.get("name", "Unknown")),
+                        "icon": self._guess_icon_from_text(ext.get("text", "")),
+                        "action": ext.get("action", "shell_extension"),
+                        "command": ext.get("command", "")
+                    })
+                actions.append({"separator": True})
         
         # Properties
         actions.append({
@@ -999,6 +1123,9 @@ class WindowsShellIntegration:
             "action": "properties",
             "shortcut": "Alt+Enter"
         })
+        
+        # Sort and prioritize like Windows Explorer
+        actions = self._prioritize_like_windows_explorer(actions)
         
         return actions
     
@@ -1088,3 +1215,199 @@ class WindowsShellIntegration:
         ]
         
         return actions
+    
+    def _extract_exe_path_from_command(self, command: str) -> str:
+        """Extract executable path from shell command"""
+        if not command:
+            return ""
+        
+        command = command.strip()
+        if command.startswith('"'):
+            # Find the closing quote
+            end_quote = command.find('"', 1)
+            if end_quote > 0:
+                return command[1:end_quote]
+        else:
+            # Take the first part before any space
+            parts = command.split(' ')
+            return parts[0] if parts else ""
+        
+        return ""
+    
+    def _is_system_resource_reference(self, text: str) -> bool:
+        """Check if text is a system resource reference like @shell32.dll,-8506"""
+        if not text:
+            return False
+        return text.startswith('@') and ('.dll,' in text or '.exe,' in text)
+    
+    def _resolve_system_resource(self, resource_ref: str) -> str:
+        """Resolve system resource reference to actual text"""
+        try:
+            # Common system resource mappings
+            resource_mappings = {
+                '@shell32.dll,-8506': 'Find',
+                '@shell32.dll,-8508': 'Find',
+                '@wsl.exe,-2': '',  # Skip WSL entries completely
+                '@shell32.dll,-30315': 'Send to',
+                '@shell32.dll,-31374': 'Copy',
+                '@shell32.dll,-31375': 'Cut',
+                # Add more system resources that should be filtered
+                '@shell32.dll,-10210': '',  # Skip
+                '@shell32.dll,-10211': '',  # Skip
+                '@shell32.dll,-31233': '',  # Skip
+            }
+            
+            # Check for direct mapping
+            if resource_ref in resource_mappings:
+                return resource_mappings[resource_ref]
+            
+            # If no mapping found, return empty to skip this item
+            return ''
+            
+        except Exception:
+            return ''
+    
+    def _should_filter_out_entry(self, text: str, command: str) -> bool:
+        """Filter out entries that don't appear in Windows Explorer context menu"""
+        if not text:
+            return True
+            
+        text_lower = text.lower()
+        command_lower = command.lower() if command else ""
+        
+        # Filter out WSL entries
+        if 'wsl' in text_lower or 'wsl.exe' in command_lower:
+            return True
+            
+        # Filter out Windows Subsystem entries
+        if 'windows subsystem' in text_lower:
+            return True
+            
+        # Filter out Microsoft Store entries that don't appear in Explorer
+        if 'microsoft store' in text_lower:
+            return True
+            
+        # Filter out some development tools that clutter the menu
+        if any(term in text_lower for term in ['debugger', 'profiler', 'analyzer']):
+            return True
+            
+        # Filter out system internal commands
+        if text_lower.startswith('@') or text_lower.startswith('ms-'):
+            return True
+            
+        # Filter out empty or very short entries
+        if len(text.strip()) < 2:
+            return True
+            
+        return False
+    
+    def _prioritize_like_windows_explorer(self, actions: List[Dict[str, any]]) -> List[Dict[str, any]]:
+        """Sort and prioritize context menu actions like Windows Explorer"""
+        
+        # Define priority order (lower numbers = higher priority)
+        priority_map = {
+            # Core Windows Explorer actions first (exactly like Windows)
+            "open": 1,
+            "open_with": 2,
+            
+            # Git operations (appear early in Windows Explorer)
+            "git": 10,
+            "open git gui here": 11,
+            "open git bash here": 12,
+            
+            # Text editors
+            "open with code": 20,
+            "open with sublime text": 21,
+            "open powershell here": 22,
+            
+            # First separator after open/edit actions
+            "separator_1": 50,
+            
+            # File operations (Windows Explorer order)
+            "cut": 100,
+            "copy": 101,
+            "create shortcut": 102,
+            "delete": 103,
+            "rename": 104,
+            
+            # Second separator after basic file operations  
+            "separator_2": 150,
+            
+            # Third-party media applications
+            "add to vlc media player's playlist": 200,
+            "find": 201,
+            "send to": 202,
+            "add to mpc-hc playlist": 203,
+            
+            # Final separator before properties
+            "separator_3": 800,
+            
+            # System actions last (like Windows Explorer)
+            "properties": 900,
+        }
+        
+        def get_action_priority(action):
+            """Get priority for an action"""
+            if action.get("separator"):
+                # Count separators to assign them properly
+                return 50 + (len([a for a in actions[:actions.index(action)] if a.get("separator")]) * 200)
+                
+            text = action.get("text", "").lower()
+            action_type = action.get("action", "").lower()
+            
+            # Check for exact text matches first
+            if text in priority_map:
+                return priority_map[text]
+                
+            # Check for exact action matches
+            if action_type in priority_map:
+                return priority_map[action_type]
+                
+            # Check text for known patterns
+            for keyword, priority in priority_map.items():
+                if keyword in text and keyword != "separator":
+                    return priority
+                    
+            # Default priority for unknown actions (put in middle)
+            return 400
+            
+        # Sort by priority
+        sorted_actions = sorted(actions, key=get_action_priority)
+        
+        return sorted_actions
+    
+    def _guess_icon_from_text(self, text: str) -> str:
+        """Guess appropriate icon name from extension text"""
+        if not text:
+            return "app_extension"
+            
+        text_lower = text.lower()
+        
+        # Git operations
+        if "git" in text_lower:
+            return "git"
+        
+        # Code editors
+        if "code" in text_lower or "visual studio" in text_lower:
+            return "code"
+        
+        # Sublime Text specifically
+        if "sublime" in text_lower:
+            return "editor"
+        
+        # PowerShell/Command Prompt  
+        if "powershell" in text_lower:
+            return "powershell"
+        elif "cmd" in text_lower or "command prompt" in text_lower:
+            return "cmd"
+        
+        # VLC Media Player
+        if "vlc" in text_lower:
+            return "vlc"
+            
+        # MPC-HC
+        if "mpc" in text_lower:
+            return "mpc"
+        
+        # Default fallback
+        return "app_extension"
