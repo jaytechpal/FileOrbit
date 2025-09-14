@@ -266,6 +266,14 @@ class WindowsShell:
             self.logger.error(f"Error getting default program: {e}")
             return ""
     
+    def get_shell_extensions_for_file(self, file_path: Path) -> List[Dict[str, str]]:
+        """Get shell extensions for a file"""
+        try:
+            return self.windows_shell.get_shell_extensions_for_file(file_path)
+        except Exception as e:
+            self.logger.error(f"Error getting shell extensions for file: {e}")
+            return []
+    
     def get_empty_area_context_menu(self) -> List[Dict[str, Any]]:
         """Get Windows context menu items for empty area (background)"""
         try:

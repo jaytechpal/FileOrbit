@@ -602,13 +602,38 @@ class FilePanel(QWidget):
         """Create context menu from action definitions"""
         menu = QMenu(self)
         
+        # Configure menu to show icons properly
+        menu.setToolTipsVisible(True)
+        
+        # Force menu to show icons - this is a Qt-specific workaround
+        from PySide6.QtCore import QSize
+        from PySide6.QtWidgets import QApplication
+        menu.setProperty("iconSize", QSize(16, 16))
+        
+        # Set application-wide menu icon visibility (if attribute exists)
+        try:
+            QApplication.instance().setAttribute(Qt.ApplicationAttribute.AA_DontShowIconsInMenus, False)
+        except AttributeError:
+            # Fallback for older Qt versions
+            pass
+        
+        # Use icon cache to improve performance
+        icon_cache = {}
+        
         for i, action_def in enumerate(actions):
             if action_def.get("separator"):
                 menu.addSeparator()
             elif action_def.get("submenu"):
                 submenu = QMenu(action_def["text"], self)
+                submenu.setProperty("iconSize", QSize(16, 16))  # Also set for submenu
+                
                 if action_def.get("icon"):
-                    submenu.setIcon(self._get_context_menu_icon(action_def["icon"]))
+                    icon_key = action_def["icon"]
+                    if icon_key not in icon_cache:
+                        icon_cache[icon_key] = self._get_context_menu_icon(icon_key)
+                    icon = icon_cache[icon_key]
+                    if not icon.isNull():
+                        submenu.setIcon(icon)
                 
                 # Add submenu items
                 for sub_action in action_def["submenu"]:
@@ -616,12 +641,21 @@ class FilePanel(QWidget):
                         submenu.addSeparator()
                     elif isinstance(sub_action, dict) and "text" in sub_action:
                         sub_item = QAction(sub_action["text"], self)
-                        if sub_action.get("icon") and sub_action["icon"] != "app_extension":
-                            sub_item.setIcon(self._get_context_menu_icon(sub_action["icon"]))
-                        else:
-                            # Intelligently guess icon from action text
-                            guessed_icon = self._get_icon_from_text(sub_action["text"])
-                            sub_item.setIcon(self._get_context_menu_icon(guessed_icon))
+                        
+                        # Get icon with caching
+                        icon_key = sub_action.get("icon")
+                        if not icon_key or icon_key == "app_extension":
+                            icon_key = self._get_icon_from_text(sub_action["text"])
+                            
+                        if icon_key and icon_key not in icon_cache:
+                            icon_cache[icon_key] = self._get_context_menu_icon(icon_key)
+                        
+                        if icon_key and icon_key in icon_cache:
+                            icon = icon_cache[icon_key]
+                            if not icon.isNull():
+                                sub_item.setIcon(icon)
+                                sub_item.setIconVisibleInMenu(True)
+                        
                         if sub_action.get("checkable"):
                             sub_item.setCheckable(True)
                         if sub_action.get("action"):
@@ -632,9 +666,17 @@ class FilePanel(QWidget):
                     elif isinstance(sub_action, dict) and "name" in sub_action:
                         # Handle different submenu item format (like open with programs)
                         sub_item = QAction(sub_action["name"], self)
-                        # Intelligently guess icon from name
-                        guessed_icon = self._get_icon_from_text(sub_action["name"])
-                        sub_item.setIcon(self._get_context_menu_icon(guessed_icon))
+                        
+                        # Get icon with caching
+                        icon_key = self._get_icon_from_text(sub_action["name"])
+                        if icon_key not in icon_cache:
+                            icon_cache[icon_key] = self._get_context_menu_icon(icon_key)
+                        
+                        icon = icon_cache[icon_key]
+                        if not icon.isNull():
+                            sub_item.setIcon(icon)
+                            sub_item.setIconVisibleInMenu(True)
+                        
                         if "action" in sub_action:
                             action_name = sub_action["action"]
                         elif "path" in sub_action:
@@ -651,14 +693,19 @@ class FilePanel(QWidget):
             else:
                 action = QAction(action_def["text"], self)
                 
-                # Set icon - use provided icon or intelligently guess from text
-                if action_def.get("icon") and action_def["icon"] != "app_extension":
-                    # Use the provided specific icon
-                    action.setIcon(self._get_context_menu_icon(action_def["icon"]))
-                else:
-                    # Either no icon or generic app_extension - use intelligent detection
-                    guessed_icon = self._get_icon_from_text(action_def["text"])
-                    action.setIcon(self._get_context_menu_icon(guessed_icon))
+                # Get icon with caching and intelligent fallback
+                icon_key = action_def.get("icon")
+                if not icon_key or icon_key == "app_extension":
+                    icon_key = self._get_icon_from_text(action_def["text"])
+                
+                if icon_key and icon_key not in icon_cache:
+                    icon_cache[icon_key] = self._get_context_menu_icon(icon_key)
+                
+                if icon_key and icon_key in icon_cache:
+                    icon = icon_cache[icon_key]
+                    if not icon.isNull():
+                        action.setIcon(icon)
+                        action.setIconVisibleInMenu(True)
                 
                 # Set shortcut
                 if action_def.get("shortcut"):
@@ -676,13 +723,22 @@ class FilePanel(QWidget):
                     lambda checked, act=action_name: self._handle_context_action(act)
                 )
                 
-                # Store command if available (for shell extensions)
-                if action_def.get("command"):
-                    if not hasattr(self, '_context_menu_commands'):
-                        self._context_menu_commands = {}
-                    self._context_menu_commands[action_name] = action_def["command"]
+                # Enable checkbox for checkable actions
+                if action_def.get("checkable"):
+                    action.setCheckable(True)
+                    if action_def.get("checked"):
+                        action.setChecked(True)
                 
                 menu.addAction(action)
+        
+        # Force menu icons to be visible by setting style property
+        menu.setStyleSheet("""
+            QMenu::icon {
+                width: 16px;
+                height: 16px;
+                padding-left: 4px;
+            }
+        """)
         
         return menu
     
@@ -692,6 +748,27 @@ class FilePanel(QWidget):
             return QIcon()  # Return empty icon for None/empty strings
         
         self.logger.debug(f"Getting context menu icon for: {icon_name}")
+        
+        # Check if icon_name is a file path to an extracted PNG icon
+        if icon_name.endswith('.png') and ('\\' in icon_name or '/' in icon_name):
+            # This is a file path to an extracted icon
+            from pathlib import Path
+            from PySide6.QtCore import QSize
+            icon_path = Path(icon_name)
+            if icon_path.exists():
+                self.logger.debug(f"Using extracted icon file: {icon_path}")
+                icon = QIcon(str(icon_path))
+                # Ensure icon has proper sizing and force pixmap creation
+                if not icon.isNull():
+                    # Force icon to create pixmaps at standard sizes
+                    icon.pixmap(QSize(16, 16))  # Pre-cache common sizes
+                    icon.pixmap(QSize(24, 24))
+                    icon.pixmap(QSize(32, 32))
+                    return icon
+                else:
+                    self.logger.warning(f"Extracted icon loaded as null: {icon_path}")
+            else:
+                self.logger.debug(f"Extracted icon file not found: {icon_path}")
         
         # Try to get actual application icons from the system first
         actual_icon = self._get_system_application_icon(icon_name)

@@ -184,6 +184,12 @@ class ThemeService(QObject):
             background-color: #094771;
         }
         
+        QMenu::icon {
+            padding-left: 4px;
+            width: 16px;
+            height: 16px;
+        }
+        
         /* Tool Bar */
         QToolBar {
             background-color: #2d2d30;

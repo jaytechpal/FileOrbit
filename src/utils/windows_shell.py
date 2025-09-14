@@ -12,6 +12,14 @@ from src.utils.logger import get_logger
 from src.config.constants import ShellConstants, PathConstants, IconConstants, FilterConstants, PerformanceConstants
 from src.utils.error_handling import RegistryAccessError, ShellIntegrationError, safe_execute
 
+# Import icon extractor
+try:
+    from src.utils.windows_icon_extractor import get_icon_extractor
+    ICON_EXTRACTOR_AVAILABLE = True
+except ImportError:
+    ICON_EXTRACTOR_AVAILABLE = False
+    get_icon_extractor = None
+
 
 class WindowsShellIntegration:
     """Windows shell integration for Explorer-like functionality"""
@@ -26,6 +34,17 @@ class WindowsShellIntegration:
         self._app_availability_cache = {}
         self._specialized_extensions_cache = None
         self._common_extensions_cache = None
+        
+        # Initialize icon extractor if available
+        self.icon_extractor = None
+        if ICON_EXTRACTOR_AVAILABLE:
+            try:
+                self.icon_extractor = get_icon_extractor()
+                # Preload system icons in background
+                self._preload_system_icons()
+            except Exception as e:
+                self.logger.debug(f"Failed to initialize icon extractor: {e}")
+                self.icon_extractor = None
     
     def get_file_type_info(self, file_path: Path) -> Dict[str, str]:
         """Get file type information from Windows registry"""
@@ -902,6 +921,30 @@ class WindowsShellIntegration:
         # Combine all extensions
         all_extensions = shell_extensions + specialized_extensions + common_extensions
         
+        # Extract icons for all menu items if icon extractor is available
+        # Use caching to avoid re-extracting icons on every context menu
+        if self.icon_extractor and all_extensions:
+            try:
+                # Check if we have cached icons for these menu items
+                cache_key = tuple(sorted([ext.get('text', '') for ext in all_extensions]))
+                if not hasattr(self, '_icon_cache'):
+                    self._icon_cache = {}
+                    
+                if cache_key in self._icon_cache:
+                    extracted_icons = self._icon_cache[cache_key]
+                else:
+                    # Only extract if not in cache - this is the slow operation
+                    extracted_icons = self.icon_extractor.extract_context_menu_icons(all_extensions)
+                    self._icon_cache[cache_key] = extracted_icons
+                    
+                # Update extensions with extracted icons
+                for ext in all_extensions:
+                    text = ext.get('text', '')
+                    if text in extracted_icons:
+                        ext['extracted_icon'] = extracted_icons[text]
+            except Exception as e:
+                self.logger.debug(f"Error extracting context menu icons: {e}")
+        
         # Advanced deduplication - handle text variations and normalize
         seen_items = set()
         unique_extensions = []
@@ -966,9 +1009,10 @@ class WindowsShellIntegration:
         # Open actions (single file/folder only)
         if is_single:
             if file_path.is_dir():
+                folder_open_icon = self._get_extracted_icon_for_text("folder") or "folder_open"
                 actions.append({
                     "text": "Open",
-                    "icon": "folder_open",
+                    "icon": folder_open_icon,
                     "action": "open",
                     "bold": True
                 })
@@ -979,17 +1023,18 @@ class WindowsShellIntegration:
                 })
             else:
                 default_program = self.get_default_program(file_path)
+                file_open_icon = self._get_extracted_icon_for_text("open") or "file_open"
                 if default_program:
                     actions.append({
                         "text": f"Open with {default_program}",
-                        "icon": "file_open",
+                        "icon": file_open_icon,
                         "action": "open_default",
                         "bold": True
                     })
                 else:
                     actions.append({
                         "text": "Open",
-                        "icon": "file_open", 
+                        "icon": file_open_icon, 
                         "action": "open_default",
                         "bold": True
                     })
@@ -1029,16 +1074,21 @@ class WindowsShellIntegration:
                     "command": ext.get("command", "")
                 }
                 
-                # Only set icon for certain applications, let others be auto-detected
-                text_lower = ext.get("text", "").lower()
-                if "git" in text_lower:
-                    action_def["icon"] = "git"
-                elif "vlc" in text_lower:
-                    action_def["icon"] = "vlc"
-                elif "mpc" in text_lower:
-                    action_def["icon"] = "mpc"
-                # For Sublime and PowerShell, don't set icon - let file panel guess
-                # This ensures they use the working icon resolution path
+                # Use extracted icon if available, otherwise fallback to guessing
+                extracted_icon = ext.get('extracted_icon')
+                if extracted_icon:
+                    action_def["icon"] = extracted_icon
+                else:
+                    # Only set icon for certain applications, let others be auto-detected
+                    text_lower = ext.get("text", "").lower()
+                    if "git" in text_lower:
+                        action_def["icon"] = "git"
+                    elif "vlc" in text_lower:
+                        action_def["icon"] = "vlc"
+                    elif "mpc" in text_lower:
+                        action_def["icon"] = "mpc"
+                    # For Sublime and PowerShell, don't set icon - let file panel guess
+                    # This ensures they use the working icon resolution path
                 
                 actions.append(action_def)
                     
@@ -1048,25 +1098,29 @@ class WindowsShellIntegration:
         # Send to (Windows specific)
         send_to_options = self.get_send_to_options()
         if send_to_options:
+            send_to_icon = self._get_extracted_icon_for_text("send to") or "send_to"
             actions.append({
                 "text": "Send to",
-                "icon": "send_to",
+                "icon": send_to_icon,
                 "submenu": send_to_options,
                 "action": "send_to_submenu"
             })
         
         # Cut, Copy, Paste
+        cut_icon = self._get_extracted_icon_for_text("cut") or "cut"
+        copy_icon = self._get_extracted_icon_for_text("copy") or "copy"
+        
         actions.extend([
             {"separator": True},
             {
                 "text": "Cut",
-                "icon": "cut",
+                "icon": cut_icon,
                 "action": "cut",
                 "shortcut": "Ctrl+X"
             },
             {
                 "text": "Copy",
-                "icon": "copy", 
+                "icon": copy_icon, 
                 "action": "copy",
                 "shortcut": "Ctrl+C"
             }
@@ -1074,18 +1128,20 @@ class WindowsShellIntegration:
         
         # Create shortcut
         if is_single:
+            shortcut_icon = self._get_extracted_icon_for_text("shortcut") or "shortcut"
             actions.append({
                 "text": "Create shortcut",
-                "icon": "shortcut",
+                "icon": shortcut_icon,
                 "action": "create_shortcut"
             })
         
         # Delete
+        delete_icon = self._get_extracted_icon_for_text("delete") or "delete"
         actions.extend([
             {"separator": True},
             {
                 "text": "Delete",
-                "icon": "delete",
+                "icon": delete_icon,
                 "action": "delete",
                 "shortcut": "Del"
             }
@@ -1093,9 +1149,10 @@ class WindowsShellIntegration:
         
         # Rename (single item only)
         if is_single:
+            rename_icon = self._get_extracted_icon_for_text("rename") or "rename"
             actions.append({
                 "text": "Rename",
-                "icon": "rename",
+                "icon": rename_icon,
                 "action": "rename",
                 "shortcut": "F2"
             })
@@ -1126,18 +1183,27 @@ class WindowsShellIntegration:
             
             if remaining_extensions:
                 for ext in remaining_extensions:
-                    actions.append({
+                    action_def = {
                         "text": ext.get("text", ext.get("name", "Unknown")),
-                        "icon": self._guess_icon_from_text(ext.get("text", "")),
                         "action": ext.get("action", "shell_extension"),
                         "command": ext.get("command", "")
-                    })
+                    }
+                    
+                    # Use extracted icon if available, otherwise guess from text
+                    extracted_icon = ext.get('extracted_icon')
+                    if extracted_icon:
+                        action_def["icon"] = extracted_icon
+                    else:
+                        action_def["icon"] = self._guess_icon_from_text(ext.get("text", ""))
+                    
+                    actions.append(action_def)
                 actions.append({"separator": True})
         
         # Properties
+        properties_icon = self._get_extracted_icon_for_text("properties") or "properties"
         actions.append({
             "text": "Properties",
-            "icon": "properties",
+            "icon": properties_icon,
             "action": "properties",
             "shortcut": "Alt+Enter"
         })
@@ -1431,12 +1497,19 @@ class WindowsShellIntegration:
         return sorted_actions
     
     def _guess_icon_from_text(self, text: str) -> str:
-        """Guess appropriate icon name from extension text"""
+        """Guess appropriate icon name from extension text with enhanced icon extraction"""
         if not text:
             return "app_extension"
             
         text_lower = text.lower()
         
+        # Try to get extracted icon first
+        if self.icon_extractor:
+            extracted_icon = self._get_extracted_icon_for_text(text_lower)
+            if extracted_icon:
+                return extracted_icon
+        
+        # Fallback to original logic
         # Git operations
         if "git" in text_lower:
             return "git"
@@ -1465,3 +1538,81 @@ class WindowsShellIntegration:
         
         # Default fallback
         return "app_extension"
+    
+    def _get_extracted_icon_for_text(self, text_lower: str) -> Optional[str]:
+        """Get extracted icon path for menu text"""
+        if not self.icon_extractor:
+            return None
+        
+        try:
+            # Check for system icons first
+            system_icon_mapping = {
+                'cut': 'system_cut',
+                'copy': 'system_copy', 
+                'paste': 'system_paste',
+                'delete': 'system_delete',
+                'rename': 'system_rename',
+                'properties': 'system_properties',
+                'send to': 'system_send_to',
+                'shortcut': 'system_shortcut',
+                'open': 'system_file_open',
+                'folder': 'system_folder_open',
+                'refresh': 'system_refresh',
+                'find': 'system_find',
+                'new folder': 'system_new_folder',
+            }
+            
+            for keyword, icon_name in system_icon_mapping.items():
+                if keyword in text_lower:
+                    cached_path = self.icon_extractor.get_cached_icon_path(icon_name)
+                    if cached_path:
+                        return cached_path
+            
+            # Check for application icons
+            app_patterns = {
+                'visual studio code': 'Visual Studio Code',
+                'code': 'Visual Studio Code', 
+                'sublime': 'Sublime Text',
+                'notepad++': 'Notepad++',
+                'vlc': 'VLC Media Player',
+                'mpc-hc': 'MPC-HC',
+                'mpc': 'MPC-HC',
+                'git': 'Git',
+                'powershell': 'PowerShell',
+                'cmd': 'Command Prompt',
+                'command prompt': 'Command Prompt',
+            }
+            
+            for pattern, app_name in app_patterns.items():
+                if pattern in text_lower:
+                    icon_path = self.icon_extractor.get_application_icon(app_name)
+                    if icon_path:
+                        return icon_path
+            
+            return None
+            
+        except Exception as e:
+            self.logger.debug(f"Error getting extracted icon for '{text_lower}': {e}")
+            return None
+    
+    def _preload_system_icons(self):
+        """Preload system icons in background"""
+        if not self.icon_extractor:
+            return
+        
+        try:
+            import threading
+            
+            def preload():
+                try:
+                    self.icon_extractor.preload_system_icons()
+                    self.logger.debug("System icons preloaded successfully")
+                except Exception as e:
+                    self.logger.debug(f"Error preloading system icons: {e}")
+            
+            # Run in background thread
+            thread = threading.Thread(target=preload, daemon=True)
+            thread.start()
+            
+        except Exception as e:
+            self.logger.debug(f"Error starting icon preload thread: {e}")

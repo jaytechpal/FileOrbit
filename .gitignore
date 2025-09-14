@@ -213,4 +213,7 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# FileOrbit specific
 local_*
+# Extracted Windows system icons (dynamically generated)
+resources/icons/extracted/
