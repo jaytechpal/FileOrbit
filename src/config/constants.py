@@ -159,6 +159,11 @@ class IconConstants:
     # Default icon indices
     DEFAULT_ICON_INDEX = 0
     
+    # Cache configuration
+    MAX_CACHE_SIZE = 1000
+    OPTIMAL_CACHE_SIZE = 750
+    CACHE_CLEANUP_INTERVAL = 300000  # 5 minutes in milliseconds
+    
     # Application aliases for icon detection
     APP_ALIASES = {
         "sublime": ["editor", "sublime text"],

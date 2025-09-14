@@ -15,6 +15,7 @@ from PySide6.QtTest import QTest
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from platform_config import PlatformConfig
+from src.core.service_container import ServiceContainer
 
 
 @pytest.fixture(scope="session")
@@ -27,12 +28,26 @@ def qapp():
     # Don't quit - let pytest handle cleanup
 
 
+@pytest.fixture(scope="session")
+def qt_app():
+    """Session-scoped Qt application fixture (alias for qapp)."""
+    return qapp()
+
+
 @pytest.fixture
 def temp_dir():
     """Create temporary directory for file operations tests"""
     temp_path = tempfile.mkdtemp()
     yield Path(temp_path)
     shutil.rmtree(temp_path, ignore_errors=True)
+
+
+@pytest.fixture
+def service_container():
+    """Function-scoped service container fixture."""
+    container = ServiceContainer()
+    yield container
+    container.clear()
 
 
 @pytest.fixture
