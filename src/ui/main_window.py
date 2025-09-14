@@ -17,6 +17,8 @@ from src.ui.components.sidebar import SideBar
 from src.ui.components.command_palette import CommandPalette
 from src.ui.dialogs.preferences_dialog import PreferencesDialog
 from src.utils.logger import get_logger
+from src.config.constants import UIConstants
+from src.utils.error_handling import ConfigurationError, validate_not_empty
 
 
 class MainWindow(QMainWindow):
@@ -33,8 +35,8 @@ class MainWindow(QMainWindow):
         
         # Window properties
         self.setWindowTitle("FileOrbit - Modern File Manager")
-        self.setMinimumSize(1000, 600)
-        self.resize(1400, 800)
+        self.setMinimumSize(UIConstants.MIN_WINDOW_WIDTH, UIConstants.MIN_WINDOW_HEIGHT)
+        self.resize(UIConstants.DEFAULT_WINDOW_WIDTH, UIConstants.DEFAULT_WINDOW_HEIGHT)
         
         # UI Components
         self.left_panel = None
@@ -92,14 +94,14 @@ class MainWindow(QMainWindow):
         panel_splitter = QSplitter(Qt.Horizontal)
         panel_splitter.addWidget(self.left_panel)
         panel_splitter.addWidget(self.right_panel)
-        panel_splitter.setSizes([500, 500])  # Equal split
+        panel_splitter.setSizes([UIConstants.PANEL_SPLITTER_LEFT, UIConstants.PANEL_SPLITTER_RIGHT])  # Equal split
         
         pane_layout.addWidget(panel_splitter)
         
         # Add to main splitter
         main_splitter.addWidget(self.sidebar)
         main_splitter.addWidget(pane_widget)
-        main_splitter.setSizes([200, 1200])  # Sidebar smaller
+        main_splitter.setSizes([UIConstants.SIDEBAR_WIDTH, UIConstants.MAIN_CONTENT_WIDTH])  # Sidebar smaller
         
         main_layout.addWidget(main_splitter)
         

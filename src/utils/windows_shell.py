@@ -9,6 +9,8 @@ import winreg
 from pathlib import Path
 from typing import List, Dict, Optional
 from src.utils.logger import get_logger
+from src.config.constants import ShellConstants, PathConstants, IconConstants, FilterConstants, PerformanceConstants
+from src.utils.error_handling import RegistryAccessError, ShellIntegrationError, safe_execute
 
 
 class WindowsShellIntegration:
@@ -1007,10 +1009,7 @@ class WindowsShellIntegration:
             for ext in all_extensions:
                 text = ext.get("text", "").lower()
                 # Only add high-priority extensions to top level
-                if any(priority_text in text for priority_text in [
-                    "git gui", "git bash", "open with code", "open with sublime", 
-                    "open powershell", "cmd", "command prompt"
-                ]):
+                if any(priority_text in text for priority_text in ShellConstants.PRIORITY_APP_PATTERNS):
                     priority_extensions.append(ext)
             
             # Add priority extensions
@@ -1096,8 +1095,7 @@ class WindowsShellIntegration:
         
         # Add shell extensions from installed applications (exclude priority ones already shown)
         if all_extensions:
-            priority_texts = ["git gui", "git bash", "open with code", "open with sublime", 
-                            "open powershell", "cmd", "command prompt"]
+            priority_texts = ShellConstants.PRIORITY_APP_PATTERNS
             
             remaining_extensions = []
             for ext in all_extensions:
@@ -1244,18 +1242,7 @@ class WindowsShellIntegration:
         """Resolve system resource reference to actual text"""
         try:
             # Common system resource mappings
-            resource_mappings = {
-                '@shell32.dll,-8506': 'Find',
-                '@shell32.dll,-8508': 'Find',
-                '@wsl.exe,-2': '',  # Skip WSL entries completely
-                '@shell32.dll,-30315': 'Send to',
-                '@shell32.dll,-31374': 'Copy',
-                '@shell32.dll,-31375': 'Cut',
-                # Add more system resources that should be filtered
-                '@shell32.dll,-10210': '',  # Skip
-                '@shell32.dll,-10211': '',  # Skip
-                '@shell32.dll,-31233': '',  # Skip
-            }
+            resource_mappings = ShellConstants.SYSTEM_RESOURCE_MAPPINGS
             
             # Check for direct mapping
             if resource_ref in resource_mappings:
@@ -1307,50 +1294,50 @@ class WindowsShellIntegration:
         # Define priority order (lower numbers = higher priority)
         priority_map = {
             # Core Windows Explorer actions first (exactly like Windows)
-            "open": 1,
-            "open_with": 2,
+            "open": ShellConstants.PRIORITY_OPEN_ACTIONS,
+            "open_with": ShellConstants.PRIORITY_OPEN_ACTIONS + 1,
             
             # Git operations (appear early in Windows Explorer)
-            "git": 10,
-            "open git gui here": 11,
-            "open git bash here": 12,
+            "git": ShellConstants.PRIORITY_GIT_OPERATIONS,
+            "open git gui here": ShellConstants.PRIORITY_GIT_OPERATIONS + 1,
+            "open git bash here": ShellConstants.PRIORITY_GIT_OPERATIONS + 2,
             
             # Text editors
-            "open with code": 20,
-            "open with sublime text": 21,
-            "open powershell here": 22,
+            "open with code": ShellConstants.PRIORITY_CODE_EDITORS,
+            "open with sublime text": ShellConstants.PRIORITY_CODE_EDITORS + 1,
+            "open powershell here": ShellConstants.PRIORITY_CODE_EDITORS + 2,
             
             # First separator after open/edit actions
-            "separator_1": 50,
+            "separator_1": ShellConstants.PRIORITY_FIRST_SEPARATOR,
             
             # File operations (Windows Explorer order)
-            "cut": 100,
-            "copy": 101,
-            "create shortcut": 102,
-            "delete": 103,
-            "rename": 104,
+            "cut": ShellConstants.PRIORITY_FILE_OPERATIONS,
+            "copy": ShellConstants.PRIORITY_FILE_OPERATIONS + 1,
+            "create shortcut": ShellConstants.PRIORITY_FILE_OPERATIONS + 2,
+            "delete": ShellConstants.PRIORITY_FILE_OPERATIONS + 3,
+            "rename": ShellConstants.PRIORITY_FILE_OPERATIONS + 4,
             
             # Second separator after basic file operations  
-            "separator_2": 150,
+            "separator_2": ShellConstants.PRIORITY_SECOND_SEPARATOR,
             
             # Third-party media applications
-            "add to vlc media player's playlist": 200,
-            "find": 201,
-            "send to": 202,
-            "add to mpc-hc playlist": 203,
+            "add to vlc media player's playlist": ShellConstants.PRIORITY_THIRD_PARTY_APPS,
+            "find": ShellConstants.PRIORITY_THIRD_PARTY_APPS + 1,
+            "send to": ShellConstants.PRIORITY_THIRD_PARTY_APPS + 2,
+            "add to mpc-hc playlist": ShellConstants.PRIORITY_THIRD_PARTY_APPS + 3,
             
             # Final separator before properties
-            "separator_3": 800,
+            "separator_3": ShellConstants.PRIORITY_FINAL_SEPARATOR,
             
             # System actions last (like Windows Explorer)
-            "properties": 900,
+            "properties": ShellConstants.PRIORITY_SYSTEM_ACTIONS,
         }
         
         def get_action_priority(action):
             """Get priority for an action"""
             if action.get("separator"):
                 # Count separators to assign them properly
-                return 50 + (len([a for a in actions[:actions.index(action)] if a.get("separator")]) * 200)
+                return ShellConstants.PRIORITY_FIRST_SEPARATOR + (len([a for a in actions[:actions.index(action)] if a.get("separator")]) * ShellConstants.SEPARATOR_SPACING)
                 
             text = action.get("text", "").lower()
             action_type = action.get("action", "").lower()
@@ -1369,7 +1356,7 @@ class WindowsShellIntegration:
                     return priority
                     
             # Default priority for unknown actions (put in middle)
-            return 400
+            return ShellConstants.PRIORITY_DEFAULT
             
         # Sort by priority
         sorted_actions = sorted(actions, key=get_action_priority)

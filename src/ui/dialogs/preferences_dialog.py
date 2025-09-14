@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QWi
 from PySide6.QtCore import Qt
 
 from src.utils.logger import get_logger
+from src.config.constants import UIConstants
 
 
 class PreferencesDialog(QDialog):
@@ -19,7 +20,7 @@ class PreferencesDialog(QDialog):
         
         self.setWindowTitle("Preferences")
         self.setModal(True)
-        self.setFixedSize(500, 400)
+        self.setFixedSize(UIConstants.PREFERENCES_DIALOG_WIDTH, UIConstants.PREFERENCES_DIALOG_HEIGHT)
         
         self._setup_ui()
         self._load_settings()

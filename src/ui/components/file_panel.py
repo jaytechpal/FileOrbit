@@ -18,6 +18,8 @@ from PySide6.QtGui import QIcon, QAction
 
 from src.utils.logger import get_logger
 from src.utils.windows_shell import WindowsShellIntegration
+from src.config.constants import UIConstants, IconConstants, FilterConstants
+from src.utils.error_handling import IconExtractionError, handle_icon_operation, safe_execute
 
 
 class ActivatableTabWidget(QTabWidget):
@@ -192,19 +194,19 @@ class FilePanel(QWidget):
         # Back/Forward buttons with Qt standard icons
         back_btn = ActivatablePushButton()
         back_btn.setIcon(style.standardIcon(QStyle.SP_ArrowLeft))
-        back_btn.setMaximumWidth(30)
+        back_btn.setMaximumWidth(UIConstants.NAVIGATION_BUTTON_WIDTH)
         back_btn.setToolTip("Back")
         back_btn.clicked_for_activation.connect(self._on_child_widget_clicked)
         
         forward_btn = ActivatablePushButton()
         forward_btn.setIcon(style.standardIcon(QStyle.SP_ArrowRight))
-        forward_btn.setMaximumWidth(30)
+        forward_btn.setMaximumWidth(UIConstants.NAVIGATION_BUTTON_WIDTH)
         forward_btn.setToolTip("Forward")
         forward_btn.clicked_for_activation.connect(self._on_child_widget_clicked)
         
         up_btn = ActivatablePushButton()
         up_btn.setIcon(style.standardIcon(QStyle.SP_ArrowUp))
-        up_btn.setMaximumWidth(30)
+        up_btn.setMaximumWidth(UIConstants.NAVIGATION_BUTTON_WIDTH)
         up_btn.setToolTip("Up")
         up_btn.clicked.connect(self._go_up)
         up_btn.clicked_for_activation.connect(self._on_child_widget_clicked)
@@ -439,9 +441,9 @@ class FilePanel(QWidget):
     def _format_file_size(self, size: int) -> str:
         """Format file size in human readable format"""
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if size < 1024.0:
+            if size < UIConstants.BYTES_PER_KB:
                 return f"{size:.1f} {unit}"
-            size /= 1024.0
+            size /= UIConstants.BYTES_PER_KB
         return f"{size:.1f} PB"
     
     def _format_datetime(self, timestamp: float) -> str:
@@ -927,8 +929,8 @@ class FilePanel(QWidget):
             shell32 = ctypes.windll.shell32
             
             # Get icon handle
-            SHGFI_ICON = 0x100
-            SHGFI_LARGEICON = 0x0
+            SHGFI_ICON = IconConstants.SHGFI_ICON
+            SHGFI_LARGEICON = IconConstants.SHGFI_LARGEICON
             
             class SHFILEINFO(ctypes.Structure):
                 _fields_ = [
@@ -989,8 +991,8 @@ class FilePanel(QWidget):
             shell32 = ctypes.windll.shell32
             
             # Get icon handle
-            SHGFI_ICON = 0x100
-            SHGFI_LARGEICON = 0x0
+            SHGFI_ICON = IconConstants.SHGFI_ICON
+            SHGFI_LARGEICON = IconConstants.SHGFI_LARGEICON
             
             class SHFILEINFO(ctypes.Structure):
                 _fields_ = [
